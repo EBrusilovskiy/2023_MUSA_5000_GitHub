@@ -1,0 +1,181 @@
+---
+title: "Spatial Autocorrelation for Categorical Variables"
+author: "Information adapted by Eugene Brusilovskiy from the slides of Dr. Ronald Briggs at the University of Texas at Dallas"
+date: "10/13/2022"
+output: rmdformats::readthedown
+
+---
+
+```{r setup, include=FALSE}
+library(xtable)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## The Join Count Statistic
+#### We have seen in previous lectures that Moran's I can be used to assess spatial autocorrelation in continuous variables. However, what do you do when the variable of interest is categorical and you're dealing with a polygon shapefile? (Methods presented here are based on spatial contiguity and aren't suitable for point data or non-contiguous polygons, although there may be ways to adapt them to problems of the sort.)
+
+#### Let's look at what spatial autocorrelation would look like with a binary variable. Let's take a 6x6 grid as an example (there are a total of 36 cells, or blocks). Below, we have 3 patterns -- one with positive spatial autocorrelation, one with negative spatial autocorrelation, and one with no spatial autocorrelation (i.e., a random pattern). For a Queen weight matrix, there are 110 total joins (borders) between the 36 blocks, but we can also calculate how many joins (i.e., boundaries) black blocks share with other black blocks (J~BB~), white blocks share with other white blocks (J~WW~), and black blocks share with white blocks (J~WB~). 
+
+#### Below is an example of **Positive Spatial Autocorrelation**. We can calculate that J~BB~ = 47, J~WW~ = 47, and J~BW~ = 16.
+
+![](C:/Users/eugeneby/Dropbox/Documents/Work and School/Teaching/CPLN 671 - Statistics and Data Mining/Join Count Statistics/Positive SA.png)
+
+
+#### Below is an example of **Negative Spatial Autocorrelation**. We can calculate that J~BB~ = 25, J~WW~ = 25, and J~BW~ = 60.
+
+![](C:/Users/eugeneby/Dropbox/Documents/Work and School/Teaching/CPLN 671 - Statistics and Data Mining/Join Count Statistics/Negative SA.png)
+
+#### Below is an example of **No Spatial Autocorrelation**. We can calculate that J~BB~ = 14, J~WW~ = 40, and J~BW~ = 56.
+
+![](C:/Users/eugeneby/Dropbox/Documents/Work and School/Teaching/CPLN 671 - Statistics and Data Mining/Join Count Statistics/No SA.png)
+
+#### Based on what we see above, we can say that we have:
+
+#### **Positive spatial autocorrelation** (i.e., clustering) if the numbers of BB and WW joins are significantly higher than what we would expect by chance (or, said differently, the number of BW joins is significantly lower than what we would expect by chance)
+
+#### **Negative spatial autocorrelation** (i.e., dispersion) if the numbers of BB and WW joins are significantly lower than what we would expect by chance (or, said differently, the number of BW joins is significantly higher than what we would expect by chance)
+
+#### **No spatial autocorrelation** (i.e., random pattern) if the numbers of BB and WW joins are approximately the same as what we would expect by chance (or, said differently, the number of BW joins is approximately the same as what we would expect by chance)
+
+#### Now, let's look at the expected counts of the BB, WW and BW joins under the null hypothesis of no spatial autocorrelation.
+#### The *expected count* of the BB join is:
+$$E(J_{BB}) = kP^2_B $$
+
+#### The *expected count* of the WW join is:
+$$E(J_{WW}) = kP^2_W $$
+
+#### The *expected count* of the BW join is:
+$$E(J_{BW}) = 2kP_BP_W $$
+
+#### The formulae for the corresponding standard errors are below:
+$$ \sigma(J_{BB})= \sqrt {kP^2_B + 2mP^3_B - (k+2m)P^4_B} $$
+
+$$ \sigma(J_{WW})= \sqrt {kP^2_W + 2mP^3_W - (k+2m)P^4_W} $$
+
+$$ \sigma(J_{BW})= \sqrt {2(k+m)P_B P_W - 4(k+2m)P^2_B P^2_W} $$
+
+#### In the formulae above, _k_ is the total numer of joins (boundaries), P~B~ is the expected proportion of black blocks under randomness, P~W~ is the expected proportion of white blocks under randomness, and 
+
+$$m=1/2\sum_{i}^{n} k_{i}(k_{i}-1). $$
+
+#### Ultimately, if we take the *observed count* of the BB join, subtact from it the *expected count* of the BB join, and divide that difference by the standard deviation of the BB join, the resulting statistic follows an (asymptotically) standard normal distribution under the null hypothesis of no clustering. Similarly, if we take the *observed count* of the WW join, subtact from it the *expected count* of the WW join, and divide that difference by the standard deviation of the WW join, the resulting statistic follows an (asymptotically) standard normal distribution under the null hypothesis of no clustering. 
+
+#### Said differently, 
+
+$$\frac{J_{BB} - E(J_{BB})}{\sigma_{J_{BB}}} \sim Z $$ 
+
+#### and
+
+$$\frac{J_{WW} - E(J_{WW})}{\sigma_{J_{WW}}} \sim Z $$ 
+
+## Example: 2000 Presidential Election
+
+#### Based on the theory above, let's do an actual example where we look at the 2000 presidential map at the state level, and see whether G.W. Bush or Al Gore won the state. Here, we are only dealing with the 48 contiguous states.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+#setwd("C:\\Users\\eugeneby\\Dropbox\\Documents\\Work and School\\Teaching\\CPLN 671 - Statistics and Data Mining\\Join Count Statistics")
+options(scipen=999)
+
+#install.packages(c("sp", "rgdal", "rgeos", "spdep", "spgwr", "tmap"))
+library(sp)
+library(rgdal)
+library(rgeos)
+library(spdep)
+library(spgwr)
+library(tmap)
+```
+
+#### Now, let's read in the ` Contiguous US` shapefile from our working directory.
+#### Here, we are essentially creating a ` SpatialPolygonDataFrame` from the ` Regression Data` shapefile using the ` readOGR` function. Here, the '.' refers to the set working directory - if your shapefile is contained within another folder, just insert the path instead. Using the @data command, We can examine the attributes of shp.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+setwd("C:\\Users\\eugeneby\\Dropbox\\Documents\\Work and School\\Teaching\\CPLN 671 - Statistics and Data Mining\\Join Count Statistics")
+
+shp <- rgdal::readOGR("C:\\Users\\eugeneby\\Dropbox\\Documents\\Work and School\\Teaching\\CPLN 671 - Statistics and Data Mining\\Join Count Statistics", "Contiguous_USA")
+names(shp@data)
+# Creating a new variable in the shapefile called BUSH which takes on the values of 1 if Bush won and 0 if Gore won.
+shp@data$BUSH <- ifelse(shp@data$STATE == "CA" | shp@data$STATE == "CT" | shp@data$STATE == "WA" | shp@data$STATE == "NM" | shp@data$STATE == "MN"  
+                        | shp@data$STATE == "IA" | shp@data$STATE == "WI" | shp@data$STATE == "IL" | shp@data$STATE == "MI" | shp@data$STATE == "PA"
+                        | shp@data$STATE == "NY" | shp@data$STATE == "MD" | shp@data$STATE == "DE" | shp@data$STATE == "NJ" | shp@data$STATE == "MA"
+                        | shp@data$STATE == "RI" | shp@data$STATE == "VT" | shp@data$STATE == "ME" | shp@data$STATE == "OR",  0, 1)
+names(shp@data)
+# We see that based on these data, Bush won 30 states, and Gore won 18. 
+summary(factor(shp@data$BUSH))
+```
+
+#### Now, let's create queen neighbors and plot the links.  We see that there are 214 total links (i.e., queen neighbors) for all states. To calculate the total number of boundaries, we divide that number by 2 and get 107. This way, the boundary between state 1 and state 2 is the same as the boundary between state 2 and state 1, and is not counted twice.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+#First, let's create the queen weight matrix
+sf::sf_use_s2(FALSE)  #Turn off spherical coordinates - use planar coordinates instead for the sake of this example
+queen<-poly2nb(shp, row.names=shp$STATE)
+#Now, let's convert the queen weight matrix to the necessary format using the nb2listw command
+queenmat.nb2listw <- nb2listw(queen, style = "B")
+summary(queen)
+#Now, let's plot the links
+plot(shp, col='grey90', lwd=2)
+xy<-coordinates(shp)
+par(mfrow=c(1,1)) 
+plot(queen, xy, col='red', lwd=2, add=TRUE)
+title(main='Contiguous Queen Neighbours')
+```
+
+#### Here is a map of the election results. States won by Bush are shown in black and states won by Gore are shown in white. 
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+spplot(shp, "BUSH", col="grey", col.regions=c("white", "black"))
+smallestnbcard<-card(queen)
+sum(smallestnbcard)
+```
+
+### **Hypotheses**
+#### Here, we have two hypotheses for J~WW~ and two for J~BB~:
+
+#### **_For J~WW~ (States where Gore won: ` shp@data$BUSH = 0`)_:**
+#### **H~0~**: Observed J~WW~ count = Expected J~WW~ count
+#### **H~A~**: Observed J~WW~ count > Expected J~WW~ count
+#### If p < 0.05 then reject H~0~ for H~A~
+
+#### **_For J~BB~ (States where Bush won: ` shp@data$BUSH = 1`)_:**
+#### **H~0~**: Observed J~BB~ count = Expected J~BB~ count
+#### **H~A~**: Observed J~BB~ count > Expected J~BB~ count
+#### If p < 0.05 then reject H~0~ for H~A~
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+joincount.test(factor(shp@data$BUSH), queenmat.nb2listw, alternative = "greater")
+```
+
+#### In our results, we see that the states where Gore won (i.e.,` shp@data$BUSH = 0`), the z-score is 1.8195. This can be calculated as 
+
+$$\frac{J_{WW} - E(J_{WW})}{\sigma_{J_{WW}}} = \frac{22 - 16.22074}{\sqrt{10.08890}} = 1.8195 $$ 
+
+#### From this z-statistic, we get a one-sided p-value of 0.03442 from the standard normal table. That means that we can reject H~0~ for H~A~. 
+
+#### On the other hand, for the states where Bush won (i.e., ` shp@data$BUSH = 1`), the z-score is 4.8039. This can be calculated as 
+
+$$\frac{J_{BB} - E(J_{BB})}{\sigma_{J_{BB}}} = \frac{58 - 38.51241}{\sqrt{16.45589}} = 4.8039 $$
+
+#### From this z-statistic, we get a one-sided p-value of <0.0001. Once again, this means that we can reject H~0~ for H~A~.
+
+#### In other words, there is evidence that the states where Gore won are clustered in space, and states where Bush won are clustered in space.
+
+#### Keep in mind that if we wanted our alternative hypothesis to test for negative spatial autocorrelation, we would use the ` alternative = "less"` option in the ` joincount.test` command above. And if we want our alternative hypothesis to be two-sided, then we could do this using the ` alternative = "two.sided"` option.
+
+#### Another thing to notice from the output above: the observed number of boundaries between states where Gore won is 22 and the observed number of boundaries between states where Bush won is 58. Because we saw above that the total number of boundaries between states is 107, we can also calculate the observed number of boundaries between states where Bush won and states where Gore won as 107 - (22+58) = 27.
+
+## Categorical variables with more than two categories
+#### What happens if you have a categorical variable with more than two categories? In that case, the test is performed for every category. For example, imagine you want to look at whether there is clustering of states which are solid Democrat (blue states), states which are solid Republican (red states), and swing states (purple states). In that case, the command joincount.test tests the following hypotheses:
+
+#### **_Blue States_:**
+#### **H~0~**: Blue states aren't clustered with other blue states
+#### **H~A~**: Blue states are clustered with other blue states
+
+#### **_Red States_:**
+#### **H~0~**: Red states aren't clustered with other red states
+#### **H~A~**: Red states are clustered with other red states
+
+#### **_Purple States_:**
+#### **H~0~**: Purple states aren't clustered with other purple states
+#### **H~A~**: Purple states are clustered with other purple states
+
+#### Everything else remains the same and the syntax of the ` joincount.test` command above remains the unchanged.

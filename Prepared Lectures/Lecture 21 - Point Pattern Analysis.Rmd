@@ -1,0 +1,254 @@
+---
+title: "Point Pattern Analysis in R"
+author: "Eugene Brusilovskiy"
+date: "11/15/2022"
+output: rmdformats::readthedown
+
+
+---
+## Introduction
+
+#### Here, our aim is to use R for point pattern analysis. Specifically, we will use it for calculating the Nearest Neighbor Index (NNI) and performing the K-function analysis. We will be using several different shapefiles for these analyses, all of which are saved in the following folder on Canvas: *Data\\Lecture 19-21 - Point Pattern Analysis\\R Markdown.zip*. Further, notice that while I provide polygon shapefiles that contain the boundaries of the study areas, the point data are provided as text files, rather than shapefiles. These text files contain the ID of each point and its X and Y coordinates, which can easily be obtained from the attribute table of any shapefile.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/eugeneby/Dropbox/Documents/Work and School/Teaching/CPLN 671 - Statistics and Data Mining/Point Pattern Analysis/Data/Quadrat Analysis Data")
+
+#install.packages(c("sp", "ISLR", "MASS", "spatstat", "spatial", "maptools", "ppp", "fossil", "adehabitatHR", "gdata", "raster", "rgdal", "spatialEco", "spatstat.core", "proxy"))
+
+library(graphics)
+library(maptools)
+library(spatstat)
+library(sp)
+library(fossil)
+library(spatial)
+library(adehabitatHR)
+library(gdata)
+library(raster)
+library(rgdal)
+library(spatialEco)
+library(spatstat.core)
+library(proxy)
+
+knitr::opts_chunk$set(echo = TRUE)
+
+options(scipen=999)
+```
+
+
+## Importing and Working with Boundary and Point Data
+
+#### First, let's read the ` Boundary.shp` file from the directory above, which contains the boundaries of our study area. The class ` Spatial Polygons` holds polygon topology, without attributes. The class ` owin` is a way of specifying the observation window for a point pattern. We can then plot it and add a title to it.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+Boundary <- rgdal::readOGR('.', 'Boundary')
+BoundaryPolygons <- as(Boundary, "SpatialPolygons")
+BoundaryPolygonsOW<- as(BoundaryPolygons, "owin")
+plot(BoundaryPolygonsOW, main=NULL)
+title(main = "Point Pattern Analysis")
+```
+
+#### Next, let's read in the file with the points and plot them. If you receive a message about data containing duplicated points, you can use the command ` duplicated(X,Y)` to see which points are duplicates. Also, the command cbind(Pts,duplicated(X,Y)) will show you which points have duplicated values. In general, unless you know that the duplicates shouldn't be there, you would ignore this warning.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+setwd("C:\\Users\\eugeneby\\Dropbox\\Documents\\Work and School\\Teaching\\CPLN 671 - Statistics and Data Mining\\Data\\Lecture 19 - 21 - R\\Point Pattern Analysis\\Data\\Quadrat Analysis Data")
+Pts <- read.table("Quadrat Points.txt", header=T, sep="\t", colClasses = c("X"="double"))
+pp <- ppp(Pts$X, Pts$Y, window=BoundaryPolygonsOW)
+plot(pp, main=NULL)
+title(main = "Point Pattern Analysis")
+```
+
+#### But what if we don't have a pre-defined study region and want to use R to generate a minimum convex polygon? We can easily do this in R.
+
+#### First let's create a matrix that only includes the x & y coordinates of each point. In our data set, this is simply the last two columns of the data frame ` Pts`.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+xy <-Pts[,2:3]
+```
+
+#### In order for R to consider ` xy` a spatial object, we need to convert it to class ` SpatialPoints`. We do it like this:
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+xysp <-SpatialPoints(xy)
+```
+
+#### Now, let's use the ` mcp` (minimum convex polygon) function to generate the minimum convex polygon and plot the points inside it. If we wanted to exclude some outlier points (e.g., 5 of the 100 points in the data) we would specify a different percent value in the command (e.g., 95 instead of 100).
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+cp <- mcp(xysp, percent=100)
+```
+
+#### As we've seen above, the class ` owin` is a way of specifying the observation window for a point pattern.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+cpnew <- as(cp, "owin")
+```
+
+#### Here, we are using the attached dataset ` Pts` to plot X and Y coordinates within the window ` cpnew`.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+mcpoly <- ppp(Pts$X,Pts$Y, window=cpnew)
+plot(mcpoly, main=NULL)
+```
+
+
+#### Here are a few pretty cool things we can do with the data (here, all 3 commands below have to be run together):
+#### 1. Generate the kernel density map of the points
+#### 2. Generate the countour map. The add=TRUE (or add=T) is a way for R to know that you want the new plot to be added onto the existing plot.
+#### 3. Add the point data on top of the maps density and contour maps.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+plot(density(pp))
+contour(density(pp), add=TRUE)
+plot(pp, add=T)
+```
+
+
+
+## Nearest Neighbor Index
+
+#### Now let's try to use the Nearest Neighbor Index to assess whether the data are random, clustered or dispersed. The ` nndist.ppp` command computes the distance from each point to its nearest neighbor in a point pattern. We can then use the formulas in the slides to calculate:
+
+#### The Average Expected Distance, $\overline{D}_E = \frac{0.5}{\sqrt{n/A}}$, 
+#### The Average Observed Distance, $\overline{D}_O = \frac{\sum_{i=1}^{n}D_i}{n}$, and 
+#### The Standard Error of the Average Observed Distance, $SE_{\overline{D}_O} = \frac{0.26136}{\sqrt{n^2/A}}$. 
+
+#### In the code below, the ` area.owin` command calculates the area of the study region. Here it's the minimum enclosing rectangle, but it doesn't have to be - it could be any shapefile you import from ArcGIS (or generate in R) that corresponds to your study area.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+nnd <- nndist.ppp(pp)
+#Average Observed Distance
+MeanObsDist <- mean(nnd)  
+#Average Expected Distance
+MeanExpDist <- 0.5 / sqrt(nrow(Pts) / area.owin(BoundaryPolygonsOW))
+#Standard Error
+SE <- 0.26136 / sqrt(nrow(Pts)*nrow(Pts) / area.owin(BoundaryPolygonsOW))
+```
+
+
+#### Now, we can carry out a z-test to see whether the spatial distribution of our points is random, or whether there is significant clustering or dispersion. Recall that H~0~ states that we have randomness, and H~a~ states that we have either clustering (if NNI is significantly less than 1) or dispersion (if NNI is significantly greater than 1). Here, the z-statistic is calculated as follows:
+
+$$ z= \frac{\overline{D}_O -\overline{D}_E }{SE_{\overline{D}_O}} $$
+
+#### Based on the z-statistic, we can calculate the p-value. If z < 0, we do a lower-tailed test to test for clustering, and if z > 0, we do an upper-tailed test to test for dispersion. 
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+zscore <- (MeanObsDist - MeanExpDist)/SE                    #Calculating the z-score
+pval<-ifelse(zscore > 0, 1 - pnorm(zscore), pnorm(zscore))  #Calculating the p-value
+zscore
+pval
+```
+
+#### We can also easily calculate the NNI, simply as the ratio of the Average Observed Distance and Average Expected Distance.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+NNI <- MeanObsDist / MeanExpDist
+NNI
+```
+
+#### As an aside, the ` spatialEco` package has an ` nni` function which unfortunately doesn't take user-defined study area files. We would have to covert our data to an ` sp` objects as shown below. However, the results that we get are pretty similar to what we got above, and the slight difference is due to the fact that the convex hull is used as the study area in the ` nni` function.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+xy <- Pts[,c(2,3)]      
+sp.Pts <- SpatialPointsDataFrame(coords=xy, data=Pts)   #Convert our data to a sp object
+spatialEco::nni(sp.Pts,win="hull")                      #Results are still pretty similar to results above
+```
+
+
+
+## K-Functions
+
+#### Ripley's K-functions enable us to assess the presence of clustering and dispersion at various distances. First, let's prepare the data. We can set the working directory, read in the ` Polygon Boundary.shp` and the ` Hospitals_for_R.txt` which contain the study region boundary and the hospital locations (i.e., points). The process is just like what we did above.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+setwd("C:/Users/eugeneby/Dropbox/Documents/Work and School/Teaching/CPLN 671 - Statistics and Data Mining/Point Pattern Analysis/Data/K-Functions Taking Population Into Consideration")
+#Boundary File
+Boundary <- readOGR('.', 'PA_Albers')                   
+#Class "SpatialPolygons" holds polygon topology (without attributes)
+BoundaryPolygons <- as(Boundary, "SpatialPolygons")     
+#The class "owin" is a way of specifying the observation window for a point pattern.
+BoundaryPolygonsOW<- as(BoundaryPolygons, "owin")       
+#Plotting the boundary window
+plot(BoundaryPolygonsOW, main="Point Pattern for Analysis with K-Functions")                    
+#Reading in the file with the points and plotting it
+Pts <- read.table("Hospitals_for_R.txt", header=T, sep="\t", colClasses = c("X"="double"))      
+pp <- ppp(Pts$X, Pts$Y, window=BoundaryPolygonsOW)
+plot(pp,add=T)
+```
+
+#### Let's run K-function analysis. If we double click on the ` khat` data set in the Environment Window, it will have 513 observations and 3 variables. They are:
+#### -- *r*, which is the distance that goes in increments of 488.2812
+#### -- *theo*, which is the theoretical K-function under CSR
+#### -- *iso*, which is the K-function calculated with Ripley's edge correction
+
+#### Note that we can specify the distance increments at which the K-function should be evaluated, much like we can specify the beginning and incremental distance in ArcGIS. However, in the ` spatstat.core` package of R that we are using, the K-function is evaluated at a large number of distances, and the ` Kest` function documentation urges users NOT to provide a vector of distance values at which the K-function should be evaluated, because there is a "sensible default". That said, we do provide a value of ` rmax`, which is the maximum distance at which the K-function is calculated. 
+
+#### The way that we would calculate this pairwise maximum distance is described in the slides. Specifically, we would find two points farthest away from one another and divide that distance by two. The way to do this in R would involve the use of the ` dist` command in the library ` proxy`. The method finds the Euclidean distances between each point in the first data frame and each point in the second data frame. Because in our case we need to find the distances between points in a single data frame, the first and second data frame are the same, and are simply the x and y coordinates of our points. 
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+max.distance <- max(proxy::dist(data.frame(cbind(x=Pts$X, y=Pts$Y)),
+                                data.frame(cbind(x=Pts$X, y=Pts$Y)),
+                                method="euclidean"))
+max.distance
+```
+
+#### We see that the maximum pairwise distance between points is 494,235, which is approximately 500,000. We can divide that by 2 to obtain the maximum distance at which the K-function should be estimated. This is approximately 250,000. We plug this distance into the ` Kest` command below.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+khat <-Kest(pp, rmax=250000, correction="Ripley")
+```
+
+#### Now, let's plot Ripley's K-function calculated with Ripley's edge correction, with line width 2, axis labels, and a main title. In addition, let's use the ` lines` command to overlay the theoretical K-function under CSR with a dashed ` lty=8` line.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+plot(khat$r,khat$iso,xlab="r", ylab="Ripley's K",
+     main="Ripley's Estimated K-Function",
+     cex.lab=1.6,cex.axis=1.5,cex.main=1.5,lty=1,lwd=2)
+lines(khat$r,khat$theo,lty=8, lwd=2) 
+```
+
+
+#### Of course, we need to also compute the Ripley's Simulation Confidence Envelopes. Here, let's set the number of simulations to 9 for the sake of reducing program run time, however in practice, this should be set to 999. For your HW assignments, feel free to use 9 or 99. The ` nrank=1` simply tells R that the minimum and maximum simulated values will be used and stored in the ` Kenv` data frame in columns ` lo` and ` hi`, respectively.
+
+#### In addition, notice that we need to specify that the ` envelope` function is in the ` spatstat` library; otherwise, R might use the ` envelope` command in another package, such as ` boot`. I figured that one out the hard way.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+Kenv <- spatstat.core::envelope(pp,fun="Kest", rmax=250000, nsim=9, nrank=1) 
+```
+
+#### Now, let's plot the K-function with 90% simulation envelopes, axis labels, and a title.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+plot(Kenv,xlab="r",ylab="Khat(r)", cex.lab=1.6,cex.axis=1.5,main= 
+       "Ripley's Khat with Confidence Envelopes",cex.main=1.5,lwd=2)
+```
+
+
+#### Of course, we can also compute the L-function, once again with Ripley's edge correction, and plot it together with the theoretical L-function under CSR, denoted by a dashed ` lty=8` line. 
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+lhat <- Lest(pp, rmax=250000, correction="Ripley") 
+plot(lhat$r,lhat$iso-lhat$r, xlab="r",ylab="Ripley's L",cex.lab=1.6,  
+     cex.axis=1.5,cex.main=1.5,lty=1,lwd=2, main="Ripley's Estimated L-Function") 
+lines(lhat$r,lhat$theo-lhat$r,lty=8,lwd=2) 
+```
+
+
+#### Again, we can compute the simulation envelopes and plot them. Here, we once again use 9 simulations.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+Lenv <- spatstat.core::envelope(pp,fun="Lest", rmax=250000, nsim=9,nrank=1)
+plot(Lenv,xlab="r",ylab="Lhat(r)", cex.lab=1.6,cex.axis=1.5,
+     main= "Ripley's L-function with Confidence Envelopes",cex.main=1.5,lwd=2,legend=F)
+```
+
+
+#### However, a better way to view this is to rotate this plot 45 degrees clockwise. First, we create a new data frame, ` L2`, which is a copy of the data frame ` Lenv`. Then, we will subtract the distance r from the R-defined Ripley's L-functions, and this will be done for the observed L, theoretical L, and the lower and uper envelopes. After that, we can plot the rotated Ripley's L function together with the 90% simulation envelopes, axis labels, and a title.
+
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+L2 <- Lenv 
+L2$obs <- L2$obs-L2$r
+L2$theo <- L2$theo-L2$r
+L2$lo <- L2$lo-L2$r
+L2$hi <- L2$hi-L2$r
+
+plot(L2,xlab="r",ylab="Lhat(r)", cex.lab=1.6,cex.axis=1.5,
+     main= "Ripley's L-function with Confidence Envelopes",cex.main=1.5,lwd=2,legend=F)
+```
+
+## Inhomogeneous K-Functions
+
+#### Although this is outside the scope of this Markdown, there is now a way to do this in R with the ` Kinhom` command in the ` spatstat.core` package. The documentation can be found here: https://search.r-project.org/CRAN/refmans/spatstat.core/html/Kinhom.html. Students may write a code that implements an inhomogeneous K-function analysis on one of the point data sets we used in class in lieu of one of their HW assignments. This should be submitted as a heavily annotated R Markdown, that describes each step in detail, much like is done in this document.
