@@ -1,0 +1,56 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+# Say Hisies to Markdown
+## Markdown is cute
+
+### Markdown 
+The list below is a **very comprehensive** attempt to put everything into a single file.
+It's pretty __*cool*__.
+Here are some things you can do with it:
+
+* Write cool documents
+* Embed images
+* Do even more if you have to
+    + let's see what in particular
+
+
+To learn more, go to [Google](www.google.com)
+The link to the document here is [RMarkdown](https://rmarkdown.rstudio.com/articles_intro.html)
+
+But before we do anything, let's attempt to have some pretty cool R code:
+```r
+150+5
+```
+Here's a plot:
+
+
+```{r eval=FALSE}
+hist(iris[[2]])
+```
+
+```{r echo=FALSE}
+hist(iris[[2]])
+```
+
+
+
+And in this report, we can write five plus five equals `r 5+5`.
+
+Let's also try this:
+
+Matrix c is defined as follows:
+
+```{r echo=FALSE}
+c <- matrix((1:24), ncol=3)
+c
+```
+
+Matrix d is defined as follows:
+
+```{r echo=FALSE}
+d <- matrix((25:48), ncol=3)
+d
+```

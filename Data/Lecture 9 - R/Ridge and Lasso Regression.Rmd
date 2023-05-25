@@ -1,0 +1,406 @@
+---
+title: "Ridge and Lasso Regressions"
+author: "Eugene Brusilovskiy"
+date: "8/17/2020"
+output: rmdformats::readthedown
+---
+
+
+## Installing Packages 
+
+#### **ISLR** is the package for the Hastie, Witten, James & Tibshirani textbook that contains the data set *_Hitters_* which we use for this example. In addition, **glmnet** is the package that includes ridge and lasso regression.
+
+```{r warning=FALSE, message=FALSE}
+  #install.packages("ISLR",repos = "http://cran.us.r-project.org")
+  #install.packages("glmnet",repos = "http://cran.us.r-project.org")    
+  library(ISLR)
+  library(glmnet)
+  options(scipen=999)
+```
+
+
+## The *_Hitters_* Data Set
+#### Here, we're going to be working with data set _Hitters_, which is described in detail on pp. 7-8 of https://cran.r-project.org/web/packages/ISLR/ISLR.pdf. Let's get the data set *_Hitters_* and look at the first few rows:
+
+```{r warning=FALSE, message=FALSE}
+  fix(Hitters)
+  head(Hitters)
+```
+
+
+#### There are a total of 322 observations and 20 variables in the data set, as can be seen with the **dim** command.
+
+```{r warning=FALSE, message=FALSE}
+dim(Hitters)
+```
+
+#### Now, let's clean the data: the command below tells us that there are 59 observations where the DV _Salary_ is missing.
+
+```{r warning=FALSE, message=FALSE}
+sum(is.na(Hitters$Salary))
+```
+
+#### Let's remove these 59 observations from the data set *_Hitters_*
+```{r warning=FALSE, message=FALSE}
+Hitters=na.omit(Hitters)
+```
+
+#### Now, there are 263 observations in the data set *_Hitters_*:
+
+```{r warning=FALSE, message=FALSE}
+dim(Hitters)
+sum(is.na(Hitters))
+```
+
+
+## Preparing the Data for Ridge and Lasso Regression
+
+#### The syntax for running Ridge and Lasso regression is a little different than the syntax for running OLS regression. Here, we need a matrix of predictors (let's call it x) and a vector (i.e., n x 1 matrix) containing the values of the dependent variable.
+
+#### Keep in mind that the commands below automatically standardize the variables before running the Ridge/Lasso regressions.
+
+#### Let's create a matrix of predictor variables, called *x*. Here, we are simply removing the variable _Salary_ from the data set *_Hitters_*.
+
+```{r warning=FALSE, message=FALSE}
+x=model.matrix(Salary~.,Hitters)[,-1]
+head(x)
+```
+
+#### Below, we generate the vector *y*, which is simply the dependent variable, _Salary_.
+```{r warning=FALSE, message=FALSE}
+y=Hitters$Salary
+head(y)
+```
+
+
+## Preparing Values of Lambda (Tuning Parameter)
+#### Let's generate a sequence of 100 values which we call *grid*. Basically, *grid* is a sequence which starts with 10^10 and goes down to 10^-2 (0.01). (The exponents go down by 0.121212 each time). These will be values used for lambda in the Ridge and Lasso regressions below.
+
+```{r warning=FALSE, message=FALSE}
+#### In other words, values of lambda will be:
+#### 1st value:   10^(10-0.12121212*0) = 10^(10-0) = 10^10
+#### 2nd value:   10^(10-0.12121212*1) 
+#### 3rd value:   10^(10-0.12121212*2) 
+#### 4th value:   10^(10-0.12121212*3)
+#### ...
+#### 100th value: 10^(10-0.12121212*99) = 10^(10-12) = 10^(-2)
+
+#### E.g, the 50th value of lambda = 10^(10-0.12121212*49) = 11497.57
+```
+
+```{r warning=FALSE, message=FALSE}
+grid=10^seq(10,-2,length=100)
+plot(grid)
+```
+
+## Ridge Regression
+#### Note that **alpha = 0** indicates that we run Ridge regression, and **alpha = 1** indicates we run Lasso. Here we are running Ridge Regression.
+
+```{r warning=FALSE, message=FALSE}
+ridge.mod=glmnet(x,y,alpha=0,lambda=grid)
+```
+
+#### Looking at the dimensions of the coefficient matrix. Here, there will be 20 rows (for the 19 predictors and one intercept term) and 100 columns (for the 100 different values of lambda). 
+
+```{r warning=FALSE, message=FALSE}
+dim(coef(ridge.mod))
+#Printing values of lambda
+```
+
+#### We will then print the 1st, 50th and 100th value of lambda, and the corresponding Beta coefficients.
+```{r warning=FALSE, message=FALSE}
+cbind(ridge.mod$lambda[1], ridge.mod$lambda[50], ridge.mod$lambda[100])
+cbind(coef(ridge.mod)[,1], coef(ridge.mod)[,50], coef(ridge.mod)[,100])
+```
+
+#### When lambda goes up, the magnitude of the coefficients goes down to 0. We can see that when lambda is very high (10^10), the intercept term is essentially the mean of the dependent variable. This is because when variables are centered (or standardized), the intercept is interpreted as the average value of the dependent variable when all predictors are 0.
+```{r warning=FALSE, message=FALSE}
+mean(y)
+```
+
+
+#### We can look at the magnitude of coefficients by looking at the square root of the sum of squared coefficients, which is called **l2 norm**. Below, let's calculate the **l2 norm** when lambda is 11497.57 (value in the 50th column). We get 6.36.
+
+```{r warning=FALSE, message=FALSE}
+sqrt(sum(coef(ridge.mod)[-1,50]^2))    ##-1 indicates that we are ignoring the first coefficient (i.e., the intercept term) in the calculations of l2 norm.
+```
+
+## Training and Validation
+#### We now split the samples into a training set and a test set in order to estimate the test error of ridge regression and the lasso. Here, we randomly choose a subset of numbers between 1 and n; these can then be used as the indices for the training observations. 
+
+#### We first set a random seed so that the results obtained will be reproducible.
+
+```{r warning=FALSE, message=FALSE}
+set.seed(1)
+```
+
+#### The Command _sample_ takes a sample of the specified size from the elements of x 
+#### The data set _train_ selects observations which go into the training data set. Here, the number of rows (observations) in our data set can be calculated with the command _nrow()_.; if we want to take half of the observations into the training data set, we specify that with the _nrow(x)/2_ argument.
+
+```{r warning=FALSE, message=FALSE}
+train=sample(1:nrow(x), nrow(x)/2)
+```
+
+#### This gives the IDs of observations in the training data set.
+
+```{r warning=FALSE, message=FALSE}
+train
+```
+
+#### All the observations that aren't in the train (training) data are in the test data.
+
+```{r warning=FALSE, message=FALSE}
+test=(-train)
+```
+
+#### Here, y[test] are the y values in the test data set. Similarly, y[train] are the y values in the training data set. We can print them to look at the values. 
+
+```{r warning=FALSE, message=FALSE}
+y[test]
+y[train]
+```
+
+#### Let's call the y-values in the test data set y.test.
+
+```{r warning=FALSE, message=FALSE}
+y.test=y[test]
+```
+
+#### Next we fit a ridge regression model on the training set, and evaluate its MSE on the test set, using lambda = 4. Note the use of the _predict()_ function again. This time we get predictions (y-hats) for a test set, by replacing _type="coefficients"_ with the _newx_ argument.
+
+#### Fit on training data set
+
+```{r warning=FALSE, message=FALSE}
+ridge.mod=glmnet(x[train,],y[train],alpha=0,lambda=grid, thresh=1e-12)
+```
+
+#### Get y-hats for test data set
+#### Here, the s=4 indicates that lambda=4 (s=lambda here)
+
+```{r warning=FALSE, message=FALSE}
+ridge.pred=predict(ridge.mod,s=4,newx=x[test,])
+head(ridge.pred)     #these are the y-hats for the test data set
+```
+
+#### Let's calculate the MSE of the Ridge regression in the test data set.
+#### Here, it is 142199.2
+
+```{r warning=FALSE, message=FALSE}
+test.mse=mean((ridge.pred-y.test)^2)
+test.mse
+test.rmse = sqrt(test.mse)
+test.rmse
+```
+
+#### What if we choose a very large value of lambda? Let's say, we pick lambda of 10^10 (which we write in R as 1e10. With that value of lambda, all the coefficients will be very close to (i.e., essentially exactly) 0, indicating that what we will be fitting an OLS model that ONLY includes the intercept! 
+
+```{r warning=FALSE, message=FALSE}
+ridge.pred=predict(ridge.mod,s=1e10,newx=x[test,])
+```
+
+#### Note that the predicted values for each hitter is essentially the same (these are the intercept values)
+
+```{r warning=FALSE, message=FALSE}
+head(ridge.pred)
+```
+
+#### Let's look at the MSE. Here, it is 224669.8, which is higher than 142199.2.
+#### This tells us that running the intercept-only model (i.e., the ridge regression with a very high lambda) yields a higher (i.e., worse) MSE than running the ridge regression where lambda is 4, as above.
+
+```{r warning=FALSE, message=FALSE}
+test.mse=mean((ridge.pred-y.test)^2)
+test.mse
+test.rmse = sqrt(test.mse)
+test.rmse
+```
+
+#### Let's now compare ridge regression with lambda = 4 with OLS regression (recall that when lambda is set to 0, ridge regression reduces to OLS regression)
+#### Note: in order for glmnet() to yield the exact least squares coefficients when lambda = 0, we use the argument exact=T when calling the predict() function. 
+#### Otherwise, the predict() function will interpolate over the grid of lambda values used in fitting the glmnet() model, yielding approximate results. When we use exact=T, there remains a slight discrepancy in the third decimal place between the output of _glmnet()_ when lambda = 0 and the output of _lm()_; this is due to numerical approximation on the part of _glmnet()_.
+
+```{r warning=FALSE, message=FALSE}
+ridge.pred=predict(ridge.mod,s=0,newx=x[test,])
+```
+
+#### MSE of the OLS model in the test data set is 167789.8 (still higher than the MSE of the ridge regression when lambda = 4, as we saw above (there, recall that MSE was 142199.2)).
+
+```{r warning=FALSE, message=FALSE}
+test.mse=mean((ridge.pred-y.test)^2)
+test.mse
+test.rmse = sqrt(test.mse)
+test.rmse
+```
+
+```{r warning=FALSE, message=FALSE}
+#### So we have the following MSEs and RMSEs:
+#### Lambda      Test MSE      Test RMSE         Notes
+####    4        142199.2      377.1        
+####  10^10      224669.8      474.0             Essentially this is the intercept-only OLS model
+####    0        167789.8      409.6             Essentially this is the original OLS model
+```
+
+#### In general, if we want to fit an (unpenalized) least squares model where lambda is 0, then we should use the lm() function, since that function provides more useful outputs, such as standard errors and p-values for the coefficients.
+
+```{r warning=FALSE, message=FALSE}
+lm.output<-lm(y~x, subset=train)
+predict(ridge.mod,s=0,type="coefficients")[1:20,]
+```
+
+#### As mentioned above, We can get more useful output with the lm command if we want to set lambda to 0.
+
+```{r warning=FALSE, message=FALSE}
+summary(lm.output)
+```
+
+#### In general, instead of arbitrarily choosing lambda = 4, it would be better to use cross-validation to choose the tuning parameter lambda. We can do this using the built-in cross-validation function, cv.glmnet(). By default, the function cv.glmnet() performs ten-fold cross-validation on the training data set, though this can be changed using the argument nfolds. Note that we set a random seed first so our results will be reproducible, since the choice of the cross-validation folds is random.
+
+```{r warning=FALSE, message=FALSE}
+set.seed(1)
+cv.out=cv.glmnet(x[train,],y[train],alpha=0, nfolds=10)
+```
+
+#### Let's plot the log(lambda) against the MSE in the validation data set
+
+```{r warning=FALSE, message=FALSE}
+plot(cv.out)
+```
+
+#### Let's calculate the value of lambda for which the MSE is minimized using cross-validation
+
+```{r warning=FALSE, message=FALSE}
+bestlam=cv.out$lambda.min
+```
+
+#### We can see that this value of lambda is about 326.0828 (when log(lambda) = 5.79). Next, we can see if Ridge regression when lambda is 326.0828 yields lower test MSE than OLS regression (i.e., ridge regression when lambda = 0).
+
+```{r warning=FALSE, message=FALSE}
+bestlam
+```
+
+#### The test MSE associated with this level of lambda (i.e., when s=bestlam) is calculated below. We see that this MSE is 139856.6, and it's lower than the OLS MSE (which again, is 167789.8)
+
+```{r warning=FALSE, message=FALSE}
+ridge.pred=predict(ridge.mod,s=bestlam,newx=x[test,])
+mse.bestlam <- mean((ridge.pred-y.test)^2)
+rmse.bestlam <- sqrt(mse.bestlam)
+mse.bestlam
+rmse.bestlam
+```
+
+```{r warning=FALSE, message=FALSE}
+#### So we have the following MSEs and RMSEs:
+####  Lambda     Test MSE      Test RMSE           Notes
+####    4        142199.2        377.1        
+####  10^10      224669.8        474.0             Essentially this is the intercept-only OLS model
+####    0        167789.8        409.6             Essentially this is the original OLS model
+####  326.0828   139856.6        374.0             This is the lambda chosen by cross-validation
+```
+
+#### Finally, we refit our ridge regression model on the full data set, using the value of lambda (bestlam=326.0828) chosen by cross-validation, and examine the coefficient estimates.
+
+```{r warning=FALSE, message=FALSE}
+out=glmnet(x,y,alpha=0)
+```
+
+#### As expected, none of the coefficients are zero: Ridge regression does not perform variable selection! Note that variables DivisionW, LeagueN and NewLeagueN yield coefficients which are the largest in absolute value, indicating that they are among the most important predictors in the model.
+
+```{r warning=FALSE, message=FALSE}
+predict(out,type="coefficients",s=bestlam)[1:20,]
+```
+
+#### Compare these results to the OLS regression results. Are any of these predictors even significant in the OLS regression? 
+
+```{r warning=FALSE, message=FALSE}
+lm.results=lm(y~x)
+summary(lm.results)
+```
+
+## Lasso Regression
+#### Here, alpha is set to 1 to indicate that we're running lasso regression (and not ridge)
+
+```{r warning=FALSE, message=FALSE}
+lasso.mod=glmnet(x[train,],y[train],alpha=1,lambda=grid)
+```
+
+#### Again, let's assess which model is better as per cross-validation MSE
+
+```{r warning=FALSE, message=FALSE}
+set.seed(1)
+cv.out=cv.glmnet(x[train,],y[train],alpha=1)
+```
+
+#### Here, we're seeing a plot of logged lambda against MSE.
+
+```{r warning=FALSE, message=FALSE}
+plot(cv.out)
+```
+
+#### Let's identify the best lambda and calculate the best MSE associated with the best lambda from cross-validation
+
+```{r warning=FALSE, message=FALSE}
+bestlam=cv.out$lambda.min
+bestlam
+```
+
+#### Here, this "best" lambda is 9.286955 (corresponding to log(lambda) = 2.23)
+
+#### Let's get the y-hats (lasso.pred values) with the optimal level of lambda in the test data
+
+```{r warning=FALSE, message=FALSE}
+lasso.pred=predict(lasso.mod,s=bestlam,newx=x[test,])
+```
+
+#### Here, the MSE associated with the best lambda is 143673.6 (better than the OLS MSE of 167789.8 but worse than the ridge MSE of 139856.6)
+
+```{r warning=FALSE, message=FALSE}
+mse.bestlam.lasso <- mean((lasso.pred-y.test)^2)
+rmse.bestlam.lasso <- sqrt(mse.bestlam.lasso)
+mse.bestlam.lasso
+rmse.bestlam.lasso
+```
+
+#### Here's the summary:
+```{r warning=FALSE, message=FALSE}
+#  Model               Lambda     Test MSE      Test RMSE   Notes
+#  OLS/Ridge/Lasso       0        167789.8        409.6     This is the OLS model
+#  OLS/Ridge/Lasso     10^10      224669.8        474.0     Intercept-only OLS model
+#  Ridge                 4        142199.2        377.1     Arbitrarily chosen level of lambda
+#  Ridge               326.0828   139856.6        374.0     Lambda chosen by cross-validation in Ridge
+#  Lasso               9.286955   143673.6        379.0     Lambda chosen by cross-validation in Lasso
+```
+
+
+#### However, the Lasso has a substantial advantage over ridge regression in that the resulting coefficient estimates are sparse. Here we see that 8 of the 19 coefficient estimates are exactly zero. So the lasso model with lambda chosen by cross-validation contains only 11 variables.
+
+#### Refitting model on full data set 
+
+```{r warning=FALSE, message=FALSE}
+out=glmnet(x,y,alpha=1,lambda=grid)
+lasso.coef=predict(out,type="coefficients",s=bestlam)[1:20,]
+lasso.coef
+```
+
+#### Let's print out the predictors in the Lasso model which have nonzero coefficients when lambda is set to bestlam
+
+```{r warning=FALSE, message=FALSE}
+lasso.coef[lasso.coef!=0]
+```
+
+#### Now, let's rerun the OLS model with these same 11 predictors. We note that some of them aren't even statistically significant, and that the OLS coefficient estimates are pretty different than the lasso coefficient estimates - that is because the lasso estimates are biased. 
+
+```{r warning=FALSE, message=FALSE}
+lasso.lm = lm(y~Hitters$AtBat + Hitters$Hits + Hitters$Walks + Hitters$Years + Hitters$CHmRun + Hitters$CRuns + Hitters$CRBI + Hitters$League + Hitters$Division + Hitters$PutOuts + Hitters$Errors)
+summary(lasso.lm)
+```
+
+#### But is OLS even appropriate here? Should we even be looking at statistical significance in OLS? 
+#### For instance, what happens if we look at the Variance Inflation Factor? As we can see, the VIF is huge for some predictors, meaning that we have severe multicollinearity, which can affect the statistical significance.
+```{r warning=FALSE, message=FALSE}
+#install.packages("car")
+library(car)
+vif(lasso.lm)
+```
+
+#### Again, the benefit of ridge and lasso regression over OLS are in terms of yielding a lower MSE in the test data set. But we should not be interpreting coefficients from ridge and lasso in the same way as in OLS.
+
+#### Note that Ridge and Lasso regression don't have the assumption of no multicollinearity, but these methods still have the assumptions of linearity, homoscedasticity, and independence of observations. These methods are also sensitive to outliers.
