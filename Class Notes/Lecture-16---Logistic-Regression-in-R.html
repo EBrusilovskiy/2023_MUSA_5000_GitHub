@@ -7,6 +7,7 @@
 
         <meta name="author" content="Eugene Brusilovskiy" />
     
+        <meta name="date" content="2023-05-31" />
     
     <title>Lecture 16 - Logistic Regression in R</title>
 
@@ -1293,7 +1294,7 @@ R</a></h2>
     <div id="postamble" data-toggle="wy-nav-shift" class="status">
                   <p class="author"><span class="glyphicon glyphicon-user"></span> Eugene
 Brusilovskiy</p>
-                        <p class="date"><span class="glyphicon glyphicon-calendar"></span> 11/4/2022</p>
+                        <p class="date"><span class="glyphicon glyphicon-calendar"></span> 2023-05-31</p>
           </div>
    </div>
      
@@ -1305,10 +1306,8 @@ Brusilovskiy</p>
 <div id="main">
 <div id="setting-everything-up" class="section level2">
 <h2>Setting Everything Up</h2>
-<div id="we-install-a-number-of-packages-that-we-need-in-order-to-run-logistic-regression-in-r-and-specify-the-directory-where-our-data-are-stored." class="section level4">
-<h4>We install a number of packages that we need in order to run
-logistic regression in R and specify the directory where our data are
-stored.</h4>
+<p>We install a number of packages that we need in order to run logistic
+regression in R and specify the directory where our data are stored.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_chunk<span class="sc">$</span><span class="fu">set</span>(<span class="at">echo =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_knit<span class="sc">$</span><span class="fu">set</span>(<span class="at">root.dir =</span> <span class="st">&quot;C:</span><span class="sc">\\</span><span class="st">Users</span><span class="sc">\\</span><span class="st">eugeneby</span><span class="sc">\\</span><span class="st">Dropbox</span><span class="sc">\\</span><span class="st">Documents</span><span class="sc">\\</span><span class="st">Work and School</span><span class="sc">\\</span><span class="st">Teaching</span><span class="sc">\\</span><span class="st">CPLN 671 - Statistics and Data Mining</span><span class="sc">\\</span><span class="st">Data</span><span class="sc">\\</span><span class="st">Lecture 16 - R&quot;</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">scipen=</span><span class="dv">999</span>)</span></code></pre></div>
@@ -1330,30 +1329,17 @@ stored.</h4>
 <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ROCR)</span>
 <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(xtable)</span></code></pre></div>
 </div>
-</div>
 <div id="looking-at-the-data-set" class="section level2">
 <h2>Looking at the Data Set</h2>
-<div id="our-fictitious-data-set-has-300-zip-codes.-the-relevant-variables-are-described-below" class="section level4">
-<h4>Our (fictitious) data set has 300 zip codes. The relevant variables
-are described below:</h4>
-</div>
-<div id="dependent-variable-hospital-where-0-means-theres-no-hospital-in-the-zip-code-and-1-means-there-is-a-hospital-in-the-zip-code" class="section level4">
-<h4>– Dependent Variable: <code>Hospital</code>, where 0 means there’s
-no hospital in the zip code and 1 means there is a hospital in the zip
-code</h4>
-</div>
-<div id="predictor-population-which-is-the-number-of-people-who-live-in-the-zip-code" class="section level4">
-<h4>– Predictor: <code>Population</code>, which is the number of people
-who live in the zip code</h4>
-</div>
-<div id="predictor-nearbyhospital-which-is-a-binary-indicator-of-whether-theres-a-hospital-in-a-nearby-zip-code-1yes-0no." class="section level4">
-<h4>– Predictor: <code>NearbyHospital</code>, which is a binary
-indicator of whether there’s a hospital in a nearby zip code (1=yes,
-0=no).</h4>
-</div>
-<div id="predictor-urban-which-is-an-indicator-of-whether-the-zip-code-is-urban-1yes-0no" class="section level4">
-<h4>– Predictor: <code>Urban</code>, which is an indicator of whether
-the zip code is urban (1=yes, 0=no)</h4>
+<p>Our (fictitious) data set has 300 zip codes. The relevant variables
+are described below: – Dependent Variable: <code>Hospital</code>, where
+0 means there’s no hospital in the zip code and 1 means there is a
+hospital in the zip code – Predictor: <code>Population</code>, which is
+the number of people who live in the zip code – Predictor:
+<code>NearbyHospital</code>, which is a binary indicator of whether
+there’s a hospital in a nearby zip code (1=yes, 0=no). – Predictor:
+<code>Urban</code>, which is an indicator of whether the zip code is
+urban (1=yes, 0=no)</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>mydata <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">&quot;Logistic Regression Example.csv&quot;</span>)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(mydata)</span></code></pre></div>
 <pre><code>##   ZipCode Hospital Population NearbyHospital Urban CrimeRate
@@ -1364,12 +1350,10 @@ the zip code is urban (1=yes, 0=no)</h4>
 ## 5       5        0       3634              1     1       Low
 ## 6       6        0       3673              1     1    Medium</code></pre>
 </div>
-</div>
 <div id="tabulation-of-the-dependent-variable" class="section level2">
 <h2>Tabulation of the Dependent Variable</h2>
-<div id="lets-look-at-the-tabulation-of-our-binary-dependent-variable-hospital." class="section level4">
-<h4>Let’s look at the tabulation of our binary dependent variable,
-<code>Hospital</code>.</h4>
+<p>Let’s look at the tabulation of our binary dependent variable,
+<code>Hospital</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#summary(mydata)</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(mydata<span class="sc">$</span>Hospital)</span></code></pre></div>
 <pre><code>## 
@@ -1379,28 +1363,22 @@ the zip code is urban (1=yes, 0=no)</h4>
 <pre><code>## 
 ##    0    1 
 ## 0.49 0.51</code></pre>
-</div>
-<div id="we-see-that-there-are-153-51-zip-codes-which-have-a-hospital-and-147-49-zip-codes-which-dont-have-a-hospital.-that-is-the-probability-of-there-being-a-hospital-in-the-zip-code-can-be-calculated-using-the-formula" class="section level4">
-<h4>We see that there are 153 (51%) zip codes which have a hospital, and
+<p>We see that there are 153 (51%) zip codes which have a hospital, and
 147 (49%) zip codes which don’t have a hospital. That is, the
 probability of there being a hospital in the zip code can be calculated
-using the formula</h4>
+using the formula</p>
 <p><span class="math display">\[Probability(Hospital) = \frac{Number \;
 of \; Zip \; Codes \; with \; a \; Hospital}{Total \; Number \; of \;
 Zip \; Codes} = \frac{153}{300} = .51. \]</span></p>
-</div>
-<div id="similarly-the-odds-of-there-being-a-hospital-in-a-zip-code-can-be-calculated-using-the-formula" class="section level4">
-<h4>Similarly, the odds of there being a hospital in a zip code can be
-calculated using the formula</h4>
+<p>Similarly, the odds of there being a hospital in a zip code can be
+calculated using the formula</p>
 <p><span class="math display">\[Odds(Hospital) = \frac{Number \; of \;
 Zip \; Codes \; with \; a \; Hospital}{Number \; of \; Zip \; Codes \;
 without \; a \; Hospital} = \frac{153}{147} = 1.04. \]</span></p>
 </div>
-</div>
 <div id="intercept-only-logistic-regression" class="section level2">
 <h2>Intercept-Only Logistic Regression</h2>
-<div id="now-lets-run-an-intercept-only-logistic-regression-model.-as-a-reminder-if-we-were-to-run-an-intercept-only-model-in-ols-then-the-intercept-beta_0-would-simply-be-the-average-value-of-the-dependent-variable-in-the-data-set-because-there-are-no-predictors-to-set-to-0.-similarly-in-logistic-regression-beta_0-is-the-log-odds-of-the-dependent-variable-taking-on-the-value-of-1-i.e.-log-odds-of-there-being-a-hospital-in-the-zip-code.-here-these-log-odds-.04001.-to-calculate-the-odds-of-there-being-a-hospital-in-a-zip-code-we-simply-exponentiate-these-log-odds.-so-when-we-exponentiate-beta_0-we-get-e.040011.04-which-is-exactly-the-same-as-the-odds-we-calculated-above." class="section level4">
-<h4>Now, let’s run an intercept-only logistic regression model. As a
+<p>Now, let’s run an intercept-only logistic regression model. As a
 reminder, if we were to run an intercept-only model in OLS, then the
 intercept <span class="math inline">\(\beta_0\)</span> would simply be
 the average value of the dependent variable in the data set, because
@@ -1410,16 +1388,12 @@ dependent variable taking on the value of 1 (i.e., log odds of there
 being a hospital in the zip code). Here, these log odds = .04001. To
 calculate the odds of there being a hospital in a zip code, we simply
 exponentiate these log odds. So when we exponentiate <span class="math inline">\(\beta_0\)</span>, we get e<sup>.04001</sup>=1.04,
-which is exactly the same as the odds we calculated above.</h4>
+which is exactly the same as the odds we calculated above.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>mylogit <span class="ot">&lt;-</span> <span class="fu">glm</span>(Hospital <span class="sc">~</span> <span class="dv">1</span>, <span class="at">data =</span> mydata, <span class="at">family =</span> <span class="st">&quot;binomial&quot;</span>)</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mylogit)</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## glm(formula = Hospital ~ 1, family = &quot;binomial&quot;, data = mydata)
-## 
-## Deviance Residuals: 
-##    Min      1Q  Median      3Q     Max  
-## -1.194  -1.194   1.160   1.160   1.160  
 ## 
 ## Coefficients:
 ##             Estimate Std. Error z value Pr(&gt;|z|)
@@ -1437,21 +1411,17 @@ which is exactly the same as the odds we calculated above.</h4>
 <pre><code>## (Intercept) 
 ##    1.040816</code></pre>
 </div>
-</div>
 <div id="logistic-regression-with-1-continuous-predictor-population" class="section level2">
 <h2>Logistic Regression with 1 Continuous Predictor
 (<code>Population</code>)</h2>
-<div id="first-lets-look-at-the-summary-of-the-predictor-variable-population.-we-see-that-the-average-population-of-a-zip-code-is-5777-and-the-minimum-value-is-495-meaning-that-there-are-no-zip-codes-with-a-population-below-495-in-our-data." class="section level4">
-<h4>First, let’s look at the summary of the predictor variable
+<p>First, let’s look at the summary of the predictor variable
 <code>Population</code>. We see that the average population of a zip
 code is 5777, and the minimum value is 495, meaning that there are no
-zip codes with a population below 495 in our data.</h4>
+zip codes with a population below 495 in our data.</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mydata<span class="sc">$</span>Population)</span></code></pre></div>
 <pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 ##     495    4216    5011    5777    7356    9946</code></pre>
-</div>
-<div id="now-lets-run-a-simple-logistic-regression-i.e.-logistic-regression-with-1-predictor.-when-we-look-at-the-results-we-see-that-both-the-intercept-and-the-predictor-population-are-significant.-the-estimated-value-of-beta_0-or-the-intercept-is--7.2967-and-can-be-interpreted-as-the-log-odds-of-there-being-a-hospital-in-a-zip-code-where-population-is-0.-exponentiating-these-log-odds-gives-us-the-odds-of-there-being-a-hospital-in-a-zip-code-where-the-population-is-0-which-are-calculated-to-be-e-7.2967-.0006777395.-these-are-very-low-odds-but-once-again-we-dont-have-any-zip-codes-where-population-is-below-495-in-our-data.-if-we-look-at-beta_1-or-the-coefficient-of-the-population-predictor-we-see-that-it-is-.001357.-said-differently-as-the-population-in-a-zip-code-increases-by-1-unit-i.e.-1-person-the-log-odds-of-there-being-a-hospital-in-the-zip-code-goes-up-by-.001357.-we-can-convert-the-log-odds-to-odds-by-exponentiating-beta_1-which-gives-us-e.001357-1.001358.-in-other-words-as-the-population-goes-up-by-1-person-the-odds-of-there-being-a-hospital-in-a-zip-code-go-up-by-a-factor-of-1.001358." class="section level4">
-<h4>Now, let’s run a simple logistic regression (i.e., logistic
+<p>Now, let’s run a simple logistic regression (i.e., logistic
 regression with 1 predictor). When we look at the results, we see that
 both the intercept and the predictor (<code>Population</code>) are
 significant. The estimated value of <span class="math inline">\(\beta_0\)</span>, or the intercept, is -7.2967,
@@ -1468,16 +1438,12 @@ up by .001357. We can convert the log odds to odds by exponentiating
 <span class="math inline">\(\beta_1\)</span>, which gives us
 e<sup>.001357</sup> = 1.001358. In other words, as the population goes
 up by 1 person, the odds of there being a hospital in a zip code go up
-by a factor of 1.001358.</h4>
+by a factor of 1.001358.</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>mylogit <span class="ot">&lt;-</span> <span class="fu">glm</span>(Hospital <span class="sc">~</span> Population, <span class="at">data =</span> mydata, <span class="at">family =</span> <span class="st">&quot;binomial&quot;</span>) <span class="co">#Run a logit model</span></span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mylogit)</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## glm(formula = Hospital ~ Population, family = &quot;binomial&quot;, data = mydata)
-## 
-## Deviance Residuals: 
-##     Min       1Q   Median       3Q      Max  
-## -2.1012  -0.6086   0.0674   0.3850   3.6404  
 ## 
 ## Coefficients:
 ##               Estimate Std. Error z value            Pr(&gt;|z|)    
@@ -1497,11 +1463,9 @@ by a factor of 1.001358.</h4>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>OR</span></code></pre></div>
 <pre><code>##  (Intercept)   Population 
 ## 0.0006777395 1.0013583210</code></pre>
-</div>
-<div id="we-can-also-calculate-the-95-confidence-intervals-for-the-beta-coefficients-and-exponentiate-them-to-get-the-95-confidence-intervals-for-the-odds-ratios" class="section level4">
-<h4>We can also calculate the 95% confidence intervals for the beta
+<p>We can also calculate the 95% confidence intervals for the beta
 coefficients, and exponentiate them to get the 95% confidence intervals
-for the odds ratios:</h4>
+for the odds ratios:</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confint.default</span>(mylogit)  <span class="co">#95% confidence intervals</span></span></code></pre></div>
 <pre><code>##                    2.5 %       97.5 %
 ## (Intercept) -8.861425041 -5.732070079
@@ -1510,9 +1474,7 @@ for the odds ratios:</h4>
 <pre><code>##                       OR        2.5 %      97.5 %
 ## (Intercept) 0.0006777395 0.0001268982 0.002930264
 ## Population  1.0013583210 1.0010773773 1.001685756</code></pre>
-</div>
-<div id="although-we-do-not-have-r2-as-part-of-logistic-regression-output-when-using-the-glm-function-we-can-obtain-it-when-we-run-logistic-regression-using-the-rms-package-in-r.-the-output-of-the-rms-package-using-the-lrm-command-below-gives-us-the-r2-as-part-of-the-output.-be-careful-about-using-r2-in-logistic-regression-and-in-any-model-not-estimated-with-least-squares.-it-doesnt-have-the-same-interpretation-as-in-ols-and-the-only-thing-we-can-say-about-it-is-that-higher-values-are-better." class="section level4">
-<h4>Although we do not have R<sup>2</sup> as part of logistic regression
+<p>Although we do not have R<sup>2</sup> as part of logistic regression
 output when using the <code>glm</code> function, we can obtain it when
 we run logistic regression using the <code>rms</code> package in R. The
 output of the <code>rms</code> package (using the <code>lrm</code>
@@ -1520,36 +1482,33 @@ command below) gives us the R<sup>2</sup> as part of the output. Be
 careful about using R<sup>2</sup> in logistic regression, and in any
 model not estimated with least squares. It doesn’t have the same
 interpretation as in OLS, and the only thing we can say about it is that
-higher values are better.</h4>
+higher values are better.</p>
 <div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">lrm</span>(Hospital <span class="sc">~</span> Population, <span class="at">data=</span>mydata)</span></code></pre></div>
 <pre><code>## Logistic Regression Model
-##  
-##  lrm(formula = Hospital ~ Population, data = mydata)
-##  
-##                         Model Likelihood      Discrimination    Rank Discrim.    
-##                               Ratio Test             Indexes          Indexes    
-##  Obs           300    LR chi2     189.31      R2       0.624    C       0.935    
-##   0            147    d.f.             1      R2(1,300)0.466    Dxy     0.871    
-##   1            153    Pr(&gt; chi2) &lt;0.0001    R2(1,224.9)0.567    gamma   0.872    
-##  max |deriv| 6e-06                            Brier    0.117    tau-a   0.437    
-##  
-##             Coef    S.E.   Wald Z Pr(&gt;|Z|)
-##  Intercept  -7.2967 0.7983 -9.14  &lt;0.0001 
-##  Population  0.0014 0.0002  8.78  &lt;0.0001 
-## </code></pre>
-</div>
+## 
+## lrm(formula = Hospital ~ Population, data = mydata)
+## 
+##                        Model Likelihood      Discrimination    Rank Discrim.    
+##                              Ratio Test             Indexes          Indexes    
+## Obs           300    LR chi2     189.31      R2       0.624    C       0.935    
+##  0            147    d.f.             1      R2(1,300)0.466    Dxy     0.871    
+##  1            153    Pr(&gt; chi2) &lt;0.0001    R2(1,224.9)0.567    gamma   0.872    
+## max |deriv| 6e-06                            Brier    0.117    tau-a   0.437    
+## 
+##            Coef    S.E.   Wald Z Pr(&gt;|Z|)
+## Intercept  -7.2967 0.7983 -9.14  &lt;0.0001 
+## Population  0.0014 0.0002  8.78  &lt;0.0001</code></pre>
 </div>
 <div id="logistic-regression-with-1-binary-predictor-urban" class="section level2">
 <h2>Logistic Regression with 1 Binary Predictor
 (<code>Urban</code>)</h2>
-<div id="before-we-run-a-logistic-regression-with-1-binary-predictor-which-looks-at-whether-the-zip-code-is-urban-lets-look-at-the-cross-tabulation-between-our-dependent-variable-hospital-and-this-predictor-urban.-we-see-from-the-cross-tabulation-that-out-of-the-152-non-urban-zip-codes-80-52.6-have-hospitals-and-72-47.4-do-not.-we-also-see-that-out-of-the-148-urban-zip-codes-73-49.3-have-hospitals-and-75-50.7-do-not." class="section level4">
-<h4>Before we run a logistic regression with 1 binary predictor (which
+<p>Before we run a logistic regression with 1 binary predictor (which
 looks at whether the zip code is urban), let’s look at the
 cross-tabulation between our dependent variable, <code>Hospital</code>,
 and this predictor (<code>Urban</code>). We see from the
 cross-tabulation that out of the 152 non-urban zip codes, 80 (52.6%)
 have hospitals and 72 (47.4%) do not. We also see that out of the 148
-urban zip codes, 73 (49.3%) have hospitals, and 75 (50.7%) do not.</h4>
+urban zip codes, 73 (49.3%) have hospitals, and 75 (50.7%) do not.</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">CrossTable</span>(mydata<span class="sc">$</span>Hospital, mydata<span class="sc">$</span>Urban,<span class="at">prop.r=</span><span class="cn">FALSE</span>,<span class="at">prop.chisq=</span><span class="cn">FALSE</span>, <span class="at">chisq=</span><span class="cn">FALSE</span>,<span class="at">prop.t=</span><span class="cn">FALSE</span>)</span></code></pre></div>
 <pre><code>## 
 ##  
@@ -1577,46 +1536,32 @@ urban zip codes, 73 (49.3%) have hospitals, and 75 (50.7%) do not.</h4>
 ## ----------------|-----------|-----------|-----------|
 ## 
 ## </code></pre>
-</div>
-<div id="lets-calculate-the-odds-of-there-being-a-hospital-in-non-urban-and-urban-zip-codes-respectively" class="section level4">
-<h4>Let’s calculate the odds of there being a hospital in non-urban and
-urban zip codes, respectively:</h4>
+<p>Let’s calculate the odds of there being a hospital in non-urban and
+urban zip codes, respectively:</p>
 <p><span class="math display">\[Odds(Hospital|Not \; Urban) =
 \frac{Number \; of \; Not \; Urban \; Zip \; Codes \; with \; a \;
 Hospital}{Number \; of \;Not \; Urban \; Zip \; Codes \; without \; a \;
 Hospital} = \frac{80}{72} = 1.11, \]</span></p>
-</div>
-<div id="and" class="section level4">
-<h4>and</h4>
+<p>and</p>
 <p><span class="math display">\[Odds(Hospital|Urban) = \frac{Number \;
 of \;  Urban \; Zip \; Codes \; with \; a \; Hospital}{Number \; of  \;
 Urban \; Zip \; Codes \; without \; a \; Hospital} = \frac{73}{75} =
 .97. \]</span></p>
-</div>
-<div id="we-can-also-calculate-the-ratio-of-these-two-odds" class="section level4">
-<h4>We can also calculate the ratio of these two odds:</h4>
+<p>We can also calculate the ratio of these two odds:</p>
 <p><span class="math display">\[\frac{Odds(Hospital|Urban)}{Odds(Hospital|Not \;
 Urban)}=\frac{Odds(Hospital|Urban=1)}{Odds(Hospital|Urban=0)}=\frac{.97}{1.11}=.876,
 \]</span></p>
-</div>
-<div id="or-alternatively" class="section level4">
-<h4>or, alternatively,</h4>
+<p>or, alternatively,</p>
 <p><span class="math display">\[\frac{Odds(Hospital|Not \;
 Urban)}{Odds(Hospital|
 Urban)}=\frac{Odds(Hospital|Urban=0)}{Odds(Hospital|Urban=1)}=\frac{1.11}{.97}=\frac{1}{.876}=1.14.
 \]</span></p>
-</div>
-<div id="now-lets-run-the-logistic-regression." class="section level4">
-<h4>Now, let’s run the logistic regression.</h4>
+<p>Now, let’s run the logistic regression.</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>mylogit <span class="ot">&lt;-</span> <span class="fu">glm</span>(Hospital <span class="sc">~</span> Urban, <span class="at">data =</span> mydata, <span class="at">family =</span> <span class="st">&quot;binomial&quot;</span>)</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mylogit)</span></code></pre></div>
 <pre><code>## 
 ## Call:
 ## glm(formula = Hospital ~ Urban, family = &quot;binomial&quot;, data = mydata)
-## 
-## Deviance Residuals: 
-##    Min      1Q  Median      3Q     Max  
-## -1.222  -1.166   1.133   1.133   1.189  
 ## 
 ## Coefficients:
 ##             Estimate Std. Error z value Pr(&gt;|z|)
@@ -1634,18 +1579,14 @@ Urban)}=\frac{Odds(Hospital|Urban=0)}{Odds(Hospital|Urban=1)}=\frac{1.11}{.97}=\
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>OR</span></code></pre></div>
 <pre><code>## (Intercept)       Urban 
 ##    1.111111    0.876000</code></pre>
-</div>
-<div id="we-see-that-beta_0-.1054-indicating-that-when-urban-0-the-log-odds-of-there-being-a-hospital-in-the-zip-code-are-.1054.-here-urban-0-has-a-clear-interpretation-these-are-simply-non-urban-zip-codes.-so-the-odds-of-there-being-a-hospital-in-a-non-urban-zip-code-can-be-calculated-as-e.1054-1.11-which-exactly-what-we-saw-in-our-cross-tabulation-and-calculations-above." class="section level4">
-<h4>We see that <span class="math inline">\(\beta_0\)</span> = .1054,
+<p>We see that <span class="math inline">\(\beta_0\)</span> = .1054,
 indicating that when <code>Urban</code> = 0, the log odds of there being
 a hospital in the zip code are .1054. Here, <code>Urban</code> = 0 has a
 clear interpretation – these are simply non-urban zip codes. So, the
 odds of there being a hospital in a non-urban zip code can be calculated
 as e<sup>.1054</sup> = 1.11, which exactly what we saw in our
-cross-tabulation and calculations above.</h4>
-</div>
-<div id="as-for-beta_1-the-coefficient-of-urban-it-is--.1324.-although-it-is-not-statistically-significant-here-p-.05-lets-pretend-that-it-is-and-interpret-it-for-the-sake-of-the-example.-as-urban-goes-up-by-1-unit-i.e.-as-we-go-from-a-non-urban-zip-code-where-urban-0-to-an-urban-zip-code-where-urban-1-the-log-odds-of-there-being-a-hospital-in-a-zip-code-change-by--.1324.-said-differently-as-urban-goes-up-by-1-unit-i.e.-as-we-go-from-a-non-urban-zip-code-to-an-urban-zip-code-the-odds-of-there-being-a-hospital-in-the-zip-code-change-by-a-factor-of-e-.1324-.876.-and-this-once-again-is-consistent-with-our-calculation-earlier-of" class="section level4">
-<h4>As for <span class="math inline">\(\beta_1\)</span>, the coefficient
+cross-tabulation and calculations above.</p>
+<p>As for <span class="math inline">\(\beta_1\)</span>, the coefficient
 of <code>Urban</code>, it is -.1324. Although it is not statistically
 significant here (p &gt; .05), let’s pretend that it is and interpret it
 for the sake of the example. As <code>Urban</code> goes up by 1 unit
@@ -1655,23 +1596,21 @@ there being a hospital in a zip code change by -.1324. Said differently,
 as <code>Urban</code> goes up by 1 unit (i.e., as we go from a non-urban
 zip code to an urban zip code), the odds of there being a hospital in
 the zip code change by a factor of e<sup>-.1324</sup> = .876. And this,
-once again, is consistent with our calculation earlier of</h4>
+once again, is consistent with our calculation earlier of</p>
 <p><span class="math display">\[
 \frac{Odds(Hospital|Urban)}{Odds(Hospital|Not \; Urban)} = .876.
 \]</span></p>
 </div>
-</div>
 <div id="multiple-logistic-regression" class="section level2">
 <h2>Multiple Logistic Regression</h2>
-<div id="first-as-an-aside-if-we-had-categorical-predictors-we-would-need-to-use-the-factor-command-to-treat-nearbyhospital-and-urban-as-categorical-variables.-this-isnt-really-necessary-for-binary-variables-but-needed-for-variables-which-have-more-than-2-categories.-that-is-for-a-categorical-variable-with-k-categories-we-would-create-k-dummies-and-include-k-1-of-them-in-the-regression-as-we-discussed-earlier-in-the-semester." class="section level4">
-<h4>First, as an aside, if we had categorical predictors, we would need
+<p>First, as an aside, if we had categorical predictors, we would need
 to use the <code>factor</code> command to treat
 <code>NearbyHospital</code> and <code>Urban</code> as categorical
 variables. This isn’t really necessary for binary variables, but needed
 for variables which have more than 2 categories. That is, for a
 categorical variable with <em>k</em> categories, we would create
 <em>k</em> dummies and include <em>k</em>-1 of them in the regression,
-as we discussed earlier in the semester.</h4>
+as we discussed earlier in the semester.</p>
 <div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>mydata<span class="sc">$</span>NearbyHospital <span class="ot">&lt;-</span> <span class="fu">factor</span>(mydata<span class="sc">$</span>NearbyHospital)</span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>mydata<span class="sc">$</span>Urban <span class="ot">&lt;-</span> <span class="fu">factor</span>(mydata<span class="sc">$</span>Urban)</span>
 <span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mydata)</span></code></pre></div>
@@ -1689,9 +1628,7 @@ as we discussed earlier in the semester.</h4>
 ##                    
 ##                    
 ## </code></pre>
-</div>
-<div id="now-lets-run-the-multiple-logistic-regression" class="section level4">
-<h4>Now, let’s run the multiple logistic regression:</h4>
+<p>Now, let’s run the multiple logistic regression:</p>
 <div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">scipen=</span><span class="dv">999</span>)</span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>mylogit <span class="ot">&lt;-</span> <span class="fu">glm</span>(Hospital <span class="sc">~</span> Population <span class="sc">+</span> NearbyHospital <span class="sc">+</span> Urban, <span class="at">data =</span> mydata, <span class="at">family =</span> <span class="st">&quot;binomial&quot;</span>)</span>
 <span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mylogit)</span></code></pre></div>
@@ -1699,10 +1636,6 @@ as we discussed earlier in the semester.</h4>
 ## Call:
 ## glm(formula = Hospital ~ Population + NearbyHospital + Urban, 
 ##     family = &quot;binomial&quot;, data = mydata)
-## 
-## Deviance Residuals: 
-##     Min       1Q   Median       3Q      Max  
-## -2.1628  -0.5767   0.0621   0.3695   3.5460  
 ## 
 ## Coefficients:
 ##                   Estimate Std. Error z value            Pr(&gt;|z|)    
@@ -1727,77 +1660,57 @@ as we discussed earlier in the semester.</h4>
 ## Population       0.0013654 1.0013663324 1.00108261467 1.001697394
 ## NearbyHospital1  0.5609031 1.7522541838 0.90239224721 3.465815366
 ## Urban1          -0.2282038 0.7959619879 0.40750346403 1.545952439</code></pre>
-</div>
-<div id="lets-quickly-interpret-the-results.-again-when-we-look-at-the-p-values-column-prz-only-population-is-a-significant-predictor-of-our-dependent-variable-but-for-the-sake-of-the-example-lets-pretend-that-all-3-predictors-are-significant" class="section level4">
-<h4>Let’s quickly interpret the results. Again, when we look at the
+<p>Let’s quickly interpret the results. Again, when we look at the
 p-values (column <code>Pr(&gt;|z|)</code>, only population is a
 significant predictor of our dependent variable, but for the sake of the
-example, let’s pretend that all 3 predictors are significant:</h4>
-</div>
-<div id="first-of-all-the-intercept-beta_0--7.522-and-the-associated-odds-ratio-ebeta_0-e-7.522-.000541.-this-means-that-the-odds-of-there-being-a-hospital-in-a-zip-code-where-all-3-predictors-are-0-i.e.-population-0-urban-0-meaning-its-a-non-urban-zip-code-and-nearbyhospital-0-meaning-that-theres-no-hospital-in-a-nearby-zip-code-are-.000541." class="section level4">
-<h4>– First of all, the intercept <span class="math inline">\(\beta_0\)</span> = -7.522, and the associated odds
-ratio = e<sup><span class="math inline">\(\beta_0\)</span></sup> =
-e<sup>-7.522</sup> = .000541. This means that the odds of there being a
-hospital in a zip code where all 3 predictors are 0 (i.e.,
-<code>Population</code> = 0, <code>Urban</code> = 0, meaning it’s a
-non-urban zip code, and <code>NearbyHospital</code> = 0, meaning that
-there’s no hospital in a nearby zip code) are .000541.</h4>
-</div>
-<div id="beta_1-the-coefficient-of-the-first-predictor-population-is-.0013654-and-the-associated-odds-ratio-ebeta_1-1.0014.-this-means-that-when-urbanicity-and-the-presence-of-a-hospital-in-a-nearby-zip-code-are-held-constant-the-odds-of-there-being-a-hospital-go-up-by-a-factor-of-1.0014-as-the-population-of-the-zip-code-goes-up-by-1-person.-similarly-if-the-population-were-to-go-up-by-say-500-people-the-odds-of-there-being-a-hospital-in-the-zip-code-would-go-up-by-a-factor-of-e500beta_1-1.979." class="section level4">
-<h4>– <span class="math inline">\(\beta_1\)</span>, the coefficient of
-the first predictor, <code>Population</code>, is .0013654, and the
-associated odds ratio, e<sup><span class="math inline">\(\beta_1\)</span></sup> = 1.0014. This means that
-when urbanicity and the presence of a hospital in a nearby zip code are
-held constant, the odds of there being a hospital go up by a factor of
-1.0014 as the population of the zip code goes up by 1 person. Similarly,
-if the population were to go up by, say, 500 people, the odds of there
-being a hospital in the zip code would go up by a factor of
-e<sup>500<span class="math inline">\(\beta_1\)</span></sup> =
-1.979.</h4>
-</div>
-<div id="beta_2-the-coefficient-of-the-second-predictor-nearbyhospital-is-.56-and-the-associated-odds-ratio-is-1.75.-this-means-that-holding-other-predictors-constant-as-nearbyhospital-goes-up-by-1-unit-i.e.-goes-from-0-to-1-in-this-case-the-odds-of-there-being-a-hospital-in-the-zip-code-go-up-by-a-factor-of-1.75." class="section level4">
-<h4>– <span class="math inline">\(\beta_2\)</span>, the coefficient of
-the second predictor, <code>NearbyHospital</code>, is .56, and the
-associated odds ratio is 1.75. This means that, holding other predictors
-constant, as <code>NearbyHospital</code> goes up by 1 unit (i.e., goes
-from 0 to 1 in this case), the odds of there being a hospital in the zip
-code go up by a factor of 1.75.</h4>
-</div>
-<div id="the-interpretation-of-beta_3-which-is-the-coefficient-of-urban-as-well-as-the-associated-odds-ratio-is-left-as-an-exercise-for-the-student." class="section level4">
-<h4>– The interpretation of <span class="math inline">\(\beta_3\)</span>, which is the coefficient of
+example, let’s pretend that all 3 predictors are significant: – First of
+all, the intercept <span class="math inline">\(\beta_0\)</span> =
+-7.522, and the associated odds ratio = e<sup><span class="math inline">\(\beta_0\)</span></sup> = e<sup>-7.522</sup> =
+.000541. This means that the odds of there being a hospital in a zip
+code where all 3 predictors are 0 (i.e., <code>Population</code> = 0,
+<code>Urban</code> = 0, meaning it’s a non-urban zip code, and
+<code>NearbyHospital</code> = 0, meaning that there’s no hospital in a
+nearby zip code) are .000541. – <span class="math inline">\(\beta_1\)</span>, the coefficient of the first
+predictor, <code>Population</code>, is .0013654, and the associated odds
+ratio, e<sup><span class="math inline">\(\beta_1\)</span></sup> =
+1.0014. This means that when urbanicity and the presence of a hospital
+in a nearby zip code are held constant, the odds of there being a
+hospital go up by a factor of 1.0014 as the population of the zip code
+goes up by 1 person. Similarly, if the population were to go up by, say,
+500 people, the odds of there being a hospital in the zip code would go
+up by a factor of e<sup>500<span class="math inline">\(\beta_1\)</span></sup> = 1.979. – <span class="math inline">\(\beta_2\)</span>, the coefficient of the second
+predictor, <code>NearbyHospital</code>, is .56, and the associated odds
+ratio is 1.75. This means that, holding other predictors constant, as
+<code>NearbyHospital</code> goes up by 1 unit (i.e., goes from 0 to 1 in
+this case), the odds of there being a hospital in the zip code go up by
+a factor of 1.75. – The interpretation of <span class="math inline">\(\beta_3\)</span>, which is the coefficient of
 <code>Urban</code>, as well as the associated odds ratio, is left as an
-exercise for the student.</h4>
-</div>
+exercise for the student.</p>
 </div>
 <div id="sensitivity-specificity-and-misclassification-rates" class="section level2">
 <h2>Sensitivity, Specificity and Misclassification Rates</h2>
-<div id="one-way-to-assess-how-well-our-logistic-regression-performs-is-by-examining-the-sensitivity-of-zip-codes-that-actually-have-hospitals-and-have-high-predicted-probabilities-of-having-a-hospital-specificity-of-zip-codes-that-actually-dont-have-hospitals-and-have-low-predicted-probabilities-of-having-a-hospital-and-the-misclassification-rate.-to-do-this-we-first-need-to-get-the-predicted-values-from-the-model.-these-predicted-values-y-hats-are-the-predicted-probabilities-of-there-being-a-hospital-in-each-zip-code." class="section level4">
-<h4>One way to assess how well our logistic regression performs is by
+<p>One way to assess how well our logistic regression performs is by
 examining the sensitivity (% of zip codes that actually have hospitals
 and have high predicted probabilities of having a hospital), specificity
 (% of zip codes that actually don’t have hospitals and have low
 predicted probabilities of having a hospital), and the misclassification
 rate. To do this, we first need to get the predicted values from the
 model. These predicted values (y-hats) are the predicted probabilities
-of there being a hospital in each zip code.</h4>
+of there being a hospital in each zip code.</p>
 <div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> mylogit<span class="sc">$</span>fitted       <span class="co">#Getting the y-hats (i.e., predicted values)</span></span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(fit)       <span class="co">#Histogram of fitted values</span></span></code></pre></div>
 <p><img src="data:image/png;base64,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" width="768" /></p>
-</div>
-<div id="when-we-look-at-the-histogram-of-these-predicted-probabilities-we-might-want-to-define-a-high-probability-of-there-being-a-hospital-in-a-zip-code-at-.5-or-higher-and-a-low-probability-of-there-being-a-hospital-in-a-zip-code-at-less-than-.5.-although-.5-is-a-somewhat-arbitrary-guess-for-a-cut-off-lets-generate-a-dummy-variable-fit.binary-that-sets-the-predicted-values-of-y-fit-to-1-if-its-.5-or-greater-and-to-0-otherwise." class="section level4">
-<h4>When we look at the histogram of these predicted probabilities, we
+<p>When we look at the histogram of these predicted probabilities, we
 might want to define a high probability of there being a hospital in a
 zip code at .5 or higher, and a low probability of there being a
 hospital in a zip code at less than .5. Although .5 is a somewhat
 arbitrary guess for a cut-off, let’s generate a dummy variable
 <code>fit.binary</code> that sets the predicted values of y,
-<code>fit</code>, to 1 if it’s .5 or greater and to 0 otherwise.</h4>
+<code>fit</code>, to 1 if it’s .5 or greater and to 0 otherwise.</p>
 <div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>fit.binary <span class="ot">=</span> (fit<span class="sc">&gt;=</span><span class="fl">0.5</span>)</span></code></pre></div>
-</div>
-<div id="now-lets-do-a-cross-tabulation-between-the-actual-values-of-our-dependent-variable-hospital-and-fit.binary." class="section level4">
-<h4>Now, let’s do a cross-tabulation between the actual values of our
+<p>Now, let’s do a cross-tabulation between the actual values of our
 dependent variable, <code>Hospital</code>, and
-<code>fit.binary</code>.</h4>
+<code>fit.binary</code>.</p>
 <div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">CrossTable</span>(fit.binary, mydata<span class="sc">$</span>Hospital, <span class="at">prop.r=</span><span class="cn">FALSE</span>, <span class="at">prop.t=</span><span class="cn">FALSE</span>, <span class="at">prop.chisq=</span><span class="cn">FALSE</span>)</span></code></pre></div>
 <pre><code>## 
 ##  
@@ -1825,22 +1738,18 @@ dependent variable, <code>Hospital</code>, and
 ## -------------|-----------|-----------|-----------|
 ## 
 ## </code></pre>
-</div>
-<div id="based-on-this-cross-tabulation-we-can-calculate-the-sensitivity-of-actual-positives-correctly-identified-as-such-specificity-of-actual-negatives-correctly-identified-as-such-and-the-misclassification-rate-of-the-model" class="section level4">
-<h4>Based on this cross-tabulation, we can calculate the sensitivity (%
+<p>Based on this cross-tabulation, we can calculate the sensitivity (%
 of actual positives correctly identified as such), specificity (% of
 actual negatives correctly identified as such) and the misclassification
-rate of the model:</h4>
+rate of the model:</p>
 <p><span class="math display">\[ Sensitivity = \frac{124}{29+124} =
 \frac{124}{153} = .81 \]</span> <span class="math display">\[
 Specificity = \frac{129}{129+18} = \frac{129}{147} = .88 \]</span> <span class="math display">\[ Correct \; Classification \; Rate =
 \frac{129+124}{300} = \frac{253}{300} = .84 \]</span> <span class="math display">\[ Misclassification \; Rate = 1 - Correct \;
 Classification \; Rate = 1-\frac{253}{300}=\frac{47}{300} =
 .16\]</span></p>
-</div>
-<div id="we-can-also-repeat-this-process-with-a-different-probability-cut-off-i.e.-.3-instead-of-.5." class="section level4">
-<h4>We can also repeat this process with a different probability cut-off
-(i.e., .3 instead of .5).</h4>
+<p>We can also repeat this process with a different probability cut-off
+(i.e., .3 instead of .5).</p>
 <div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>fit.binary <span class="ot">=</span> (fit<span class="sc">&gt;=</span><span class="fl">0.3</span>)</span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="fu">CrossTable</span>(fit.binary, mydata<span class="sc">$</span>Hospital, <span class="at">prop.r=</span><span class="cn">FALSE</span>, <span class="at">prop.t=</span><span class="cn">FALSE</span>, <span class="at">prop.chisq=</span><span class="cn">FALSE</span>)</span></code></pre></div>
 <pre><code>## 
@@ -1869,12 +1778,10 @@ Classification \; Rate = 1-\frac{253}{300}=\frac{47}{300} =
 ## -------------|-----------|-----------|-----------|
 ## 
 ## </code></pre>
-</div>
-<div id="we-see-that-when-.3-is-chosen-as-the-cut-off-for-a-high-probability-of-there-being-a-hospital-in-a-zip-code-the-misclassification-rate-goes-down-from-47300-.16-to-38300-.13.-the-sensitivity-also-goes-up-though-the-specificity-goes-down-by-a-little-bit-from-.88-to-.84." class="section level4">
-<h4>We see that when .3 is chosen as the cut-off for a high probability
+<p>We see that when .3 is chosen as the cut-off for a high probability
 of there being a hospital in a zip code, the misclassification rate goes
 down from 47/300 (.16) to 38/300 (.13). The sensitivity also goes up,
-though the specificity goes down by a little bit (from .88 to .84).</h4>
+though the specificity goes down by a little bit (from .88 to .84).</p>
 <p><span class="math display">\[ Sensitivity = \frac{138}{15+138} =
 \frac{138}{153} = .90 \]</span> <span class="math display">\[
 Specificity = \frac{124}{124+23} = \frac{124}{147} = .84 \]</span> <span class="math display">\[ Correct \; Classification \; Rate =
@@ -1882,19 +1789,15 @@ Specificity = \frac{124}{124+23} = \frac{124}{147} = .84 \]</span> <span class="
 Classification \; Rate = 1-\frac{262}{300}=\frac{38}{300} = .13
 \]</span></p>
 </div>
-</div>
 <div id="roc-curve" class="section level2">
 <h2>ROC Curve</h2>
-<div id="because-we-dont-want-to-manually-try-out-multiple-probability-cut-offs-it-makes-sense-for-us-to-generate-the-roc-package.-for-more-info-on-the-rocr-package-used-here-see-httpshopstat.wordpress.com20141219a-small-introduction-to-the-rocr-package" class="section level4">
-<h4>Because we don’t want to manually try out multiple probability
+<p>Because we don’t want to manually try out multiple probability
 cut-offs, it makes sense for us to generate the ROC package. For more
-info on the <code>ROCR</code> package used here, see: <a href="https://hopstat.wordpress.com/2014/12/19/a-small-introduction-to-the-rocr-package/" class="uri">https://hopstat.wordpress.com/2014/12/19/a-small-introduction-to-the-rocr-package/</a></h4>
-</div>
-<div id="first-lets-create-a-which-is-a-matrix-combining-the-vectors-containing-the-actual-values-of-the-dependent-variable-mydatahospital-and-the-predicted-probabilities-stored-as-fit." class="section level4">
-<h4>First, let’s create <code>a</code>, which is a matrix combining the
+info on the <code>ROCR</code> package used here, see: <a href="https://hopstat.wordpress.com/2014/12/19/a-small-introduction-to-the-rocr-package/" class="uri">https://hopstat.wordpress.com/2014/12/19/a-small-introduction-to-the-rocr-package/</a></p>
+<p>First, let’s create <code>a</code>, which is a matrix combining the
 vectors containing the actual values of the dependent variable
 (<code>mydata$Hospital</code>) and the predicted probabilities, stored
-as <code>fit</code>.</h4>
+as <code>fit</code>.</p>
 <div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>a <span class="ot">&lt;-</span> <span class="fu">cbind</span>(mydata<span class="sc">$</span>Hospital, fit)</span>
 <span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(a)</span></code></pre></div>
 <pre><code>##            fit
@@ -1904,19 +1807,15 @@ as <code>fit</code>.</h4>
 ## 4 0 0.06212425
 ## 5 0 0.09730875
 ## 6 0 0.10208761</code></pre>
-</div>
-<div id="to-summarize-we-see-that-matrix-a-has-2-columns.-the-first-one-is-mydatahospital-which-are-actual-values-of-the-depenent-variable-i.e.-labels-and-the-second-one-is-fit-which-are-predicted-or-fitted-values-of-y-i.e.-predictions." class="section level4">
-<h4>To summarize, we see that matrix <code>a</code> has 2 columns. The
+<p>To summarize, we see that matrix <code>a</code> has 2 columns. The
 first one is <code>mydata$Hospital</code>, which are actual values of
 the depenent variable (i.e., labels), and the second one is
 <code>fit</code>, which are predicted, or fitted values of y (i.e.,
-predictions).</h4>
-</div>
-<div id="lets-make-the-names-of-the-variables-easy-to-understand-and-call-the-two-columns-above-labels-and-predictions-respsectively.-we-will-then-convert-the-matrix-a-to-a-data-frame-called-roc." class="section level4">
-<h4>Let’s make the names of the variables easy to understand, and call
+predictions).</p>
+<p>Let’s make the names of the variables easy to understand, and call
 the two columns above <code>labels</code> and <code>predictions</code>,
 respsectively. We will then convert the matrix <code>a</code> to a data
-frame called <code>roc</code>.</h4>
+frame called <code>roc</code>.</p>
 <div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(a) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;labels&quot;</span>,<span class="st">&quot;predictions&quot;</span>)</span>
 <span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(a)</span></code></pre></div>
 <pre><code>##   labels predictions
@@ -1927,37 +1826,29 @@ frame called <code>roc</code>.</h4>
 ## 5      0  0.09730875
 ## 6      0  0.10208761</code></pre>
 <div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>roc <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(a)</span></code></pre></div>
-</div>
-<div id="now-lets-convert-the-data-frame-roc-to-a-prediction-object-which-is-necessary-for-the-generating-the-roc-plot-with-the-rocr-package.-we-do-this-using-the-prediction-command-below.-the-order-of-the-columns-should-be-as-below-first-the-predictions-and-then-the-actual-values-of-the-dependent-variable." class="section level4">
-<h4>Now, let’s convert the data frame <code>roc</code> to a prediction
+<p>Now, let’s convert the data frame <code>roc</code> to a prediction
 object, which is necessary for the generating the ROC plot with the
 <code>ROCR</code> package. We do this using the <code>prediction</code>
 command below. The order of the columns should be as below – first the
-predictions, and then the actual values of the dependent variable.</h4>
+predictions, and then the actual values of the dependent variable.</p>
 <div class="sourceCode" id="cb48"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">prediction</span>(roc<span class="sc">$</span>predictions, roc<span class="sc">$</span>labels)</span></code></pre></div>
-</div>
-<div id="now-lets-plot-the-roc-curve-which-takes-the-pred-object-above-as-the-input.-on-the-y-axis-we-have-the-true-positive-rate-tpr-in-the-code-below-which-is-another-term-for-sensitivity.-on-the-x-axis-we-have-the-false-positive-rate-fpr-in-the-code-below-which-is-calculated-as-1---specificity.-we-also-use-the-abline-command-to-plot-the-45-degree-line." class="section level4">
-<h4>Now, let’s plot the ROC curve, which takes the <code>pred</code>
+<p>Now, let’s plot the ROC curve, which takes the <code>pred</code>
 object above as the input. On the y-axis, we have the True Positive Rate
 (<code>tpr</code> in the code below), which is another term for
 sensitivity. On the x-axis, we have the False Positive Rate
 (<code>fpr</code> in the code below), which is calculated as 1 -
 specificity. We also use the <code>abline</code> command to plot the 45
-degree line.</h4>
+degree line.</p>
 <div class="sourceCode" id="cb49"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>roc.perf <span class="ot">=</span> <span class="fu">performance</span>(pred, <span class="at">measure =</span> <span class="st">&quot;tpr&quot;</span>, <span class="at">x.measure=</span><span class="st">&quot;fpr&quot;</span>)</span>
 <span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(roc.perf)</span>
 <span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">a=</span><span class="dv">0</span>,<span class="at">b=</span><span class="dv">1</span>)</span></code></pre></div>
 <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABgAAAAPACAMAAADE4EJKAAAA2FBMVEUAAAAAADoAAGYAOjoAOmYAOpAAZpAAZrY6AAA6OgA6Ojo6OmY6ZmY6ZpA6ZrY6kLY6kNtmAABmADpmOgBmOjpmZjpmZmZmZpBmkLZmkNtmtrZmtttmtv+QOgCQZgCQZjqQZmaQkDqQkJCQkLaQtraQttuQtv+Q2/+2ZgC2Zjq2kDq2kGa2kJC2kLa2tma2tpC2tra2ttu227a229u22/+2///bkDrbkGbbtmbbtpDbtrbb25Db27bb29vb2//b/7bb////tmb/25D/27b/29v//7b//9v///9MpC1jAAAACXBIWXMAAB2HAAAdhwGP5fFlAAAgAElEQVR4nO3dfWMTx9of4FUCtUMOp1ASH54CJX0eKObQFqUkPkBxinmRvv83qlZvlmRJ1kqj2Z2Z6/ojMfZ4tbe1un/S7uxuNQSgSFXbKwBAOwQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEEAEChBABAoQQAQKEE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" width="768" /></p>
-</div>
-<div id="in-addition-if-we-want-to-weigh-specificity-and-sensitivity-equally-we-can-calculate-the-optimal-probability-cut-off.-there-are-a-couple-ways-to-do-so.-one-way-is-called-the-youden-index-which-identifies-the-cut-off-probability-that-corresponds-to-the-maximum-possible-sum-of-sensitivity-and-specificity." class="section level4">
-<h4>In addition, if we want to weigh specificity and sensitivity
-equally, we can calculate the optimal probability cut-off. There are a
-couple ways to do so. One way is called the Youden Index, which
-identifies the cut-off probability that corresponds to the maximum
-possible sum of sensitivity and specificity.</h4>
-</div>
-<div id="another-approach-calculated-using-the-code-below-is-the-cut-off-value-for-which-the-roc-curve-has-the-minimum-distance-from-the-upper-left-corner-of-the-graph-where-both-specificity-1-and-sensitivity-1.-because-we-are-minimizing-the-distance-from-the-upper-left-corner-of-the-graph-where-y-sensitivity-true-positive-rate-tpr-1-and-x-1---specificity-false-positive-rate-fpr-0-the-formula-d-x---02-y-12-is-used-in-the-code-below.-we-see-that-here-the-cut-off-that-minimizes-the-distance-from-the-upper-left-corner-of-the-roc-curve-is-.336-and-it-corresponds-to-a-sensitivity-of-.889-and-a-specificty-of-.864." class="section level4">
-<h4>Another approach, calculated using the code below, is the cut-off
+<p>In addition, if we want to weigh specificity and sensitivity equally,
+we can calculate the optimal probability cut-off. There are a couple
+ways to do so. One way is called the Youden Index, which identifies the
+cut-off probability that corresponds to the maximum possible sum of
+sensitivity and specificity.</p>
+<p>Another approach, calculated using the code below, is the cut-off
 value for which the ROC curve has the minimum distance from the upper
 left corner of the graph, where both specificity = 1 and sensitivity =
 1. Because we are minimizing the distance from the upper left corner of
@@ -1966,7 +1857,7 @@ the graph, where y = Sensitivity = True Positive Rate = <code>tpr</code>
 0, the formula <code>d = (x - 0)^2 + (y-1)^2</code> is used in the code
 below. We see that here, the cut-off that minimizes the distance from
 the upper left corner of the ROC curve is .336, and it corresponds to a
-sensitivity of .889 and a specificty of .864.</h4>
+sensitivity of .889 and a specificty of .864.</p>
 <div class="sourceCode" id="cb50"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>opt.cut <span class="ot">=</span> <span class="cf">function</span>(perf, pred){</span>
 <span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>  cut.ind <span class="ot">=</span> <span class="fu">mapply</span>(<span class="at">FUN=</span><span class="cf">function</span>(x, y, p){</span>
 <span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>    d <span class="ot">=</span> (x <span class="sc">-</span> <span class="dv">0</span>)<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> (y<span class="dv">-1</span>)<span class="sc">^</span><span class="dv">2</span></span>
@@ -1981,39 +1872,24 @@ sensitivity of .889 and a specificty of .864.</h4>
 ## sensitivity 0.8888889
 ## specificity 0.8639456
 ## cutoff      0.3361511</code></pre>
-</div>
-<div id="finally-we-can-also-calculate-the-area-under-the-curve-which-is-a-measure-of-how-well-the-model-predicts-1-responses-as-1s-and-0-responses-as-0s.-accuracy-is-measured-by-the-area-under-the-roc-curve.-an-area-of-1-represents-a-perfect-test-prediction-an-area-of-.5-represents-a-worthless-test-prediction.-a-rough-guide-for-interpreting-area-under-roc-curves-is-below" class="section level4">
-<h4>Finally, we can also calculate the area under the curve, which is a
+<p>Finally, we can also calculate the area under the curve, which is a
 measure of how well the model predicts 1 responses as 1’s and 0
 responses as 0’s. Accuracy is measured by the area under the ROC curve.
 An area of 1 represents a perfect test (prediction); an area of .5
 represents a worthless test (prediction). A rough guide for interpreting
-area under ROC Curves is below:</h4>
-</div>
-<div id="excellent-a" class="section level4">
-<h4>.90-1 = excellent (A)</h4>
-</div>
-<div id="good-b" class="section level4">
-<h4>.80-.90 = good (B)</h4>
-</div>
-<div id="fair-c" class="section level4">
-<h4>.70-.80 = fair (C)</h4>
-</div>
-<div id="poor-d" class="section level4">
-<h4>.60-.70 = poor (D)</h4>
-</div>
-<div id="fail-f" class="section level4">
-<h4>.50-.60 = fail (F)</h4>
-</div>
-<div id="these-might-be-somewhat-conservative-estimates-and-there-will-be-statisticians-who-will-say-that-area-.7-is-just-fine.-in-our-case-the-area-under-the-curve-is-.93-which-is-excellent." class="section level4">
-<h4>These might be somewhat conservative estimates, and there will be
+area under ROC Curves is below:</p>
+<p>.90-1 = excellent (A)</p>
+<p>.80-.90 = good (B)</p>
+<p>.70-.80 = fair (C)</p>
+<p>.60-.70 = poor (D)</p>
+<p>.50-.60 = fail (F)</p>
+<p>These might be somewhat conservative estimates, and there will be
 statisticians who will say that area &gt; .7 is just fine. In our case,
-the area under the curve is .93, which is excellent.</h4>
+the area under the curve is .93, which is excellent.</p>
 <div class="sourceCode" id="cb52"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>auc.perf <span class="ot">=</span> <span class="fu">performance</span>(pred, <span class="at">measure =</span><span class="st">&quot;auc&quot;</span>)</span>
 <span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>auc.perf<span class="sc">@</span>y.values</span></code></pre></div>
 <pre><code>## [[1]]
 ## [1] 0.931706</code></pre>
-</div>
 </div>
 </div>
 

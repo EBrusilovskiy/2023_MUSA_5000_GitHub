@@ -1,14 +1,14 @@
 ---
 title: "K-Means Clustering in R"
 author: "Eugene Brusilovskiy"
-date: "11/24/2022"
+date: "`r Sys.Date()`"
 output: rmdformats::readthedown
 ---
 
 
 ## Introduction
 
-#### Here, our aim is to use R for k-means cluster analysis. We will look at the wine data, which contains chemical compositions of various wines to see whether we can create clusters based on these chemical compositions. There is also a wine label in the data set, so we will be able to see whether there is a correspondenced between actual wine type and the cluster that the wine falls into.
+Here, our aim is to use R for k-means cluster analysis. We will look at the wine data, which contains chemical compositions of various wines to see whether we can create clusters based on these chemical compositions. There is also a wine label in the data set, so we will be able to see whether there is a correspondenced between actual wine type and the cluster that the wine falls into.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -25,7 +25,7 @@ options(scipen=999)
 ```
 
 ## Data Exploration
-#### First, let's read in the ` wine` data frame and look at the variables. X is the observation ID, and Type is the wine type (i.e., the label), which is something we typically don't have when we do cluster analysis. We have some other variables that indicate alcohol content, alcalinity, magnesium, phenols and flavanoids, and other wine characteristics. We prepare the data set for cluster analysis by removing the first two variables (ID and wine type), and standardizing the remaining variables using the ` scale` command. These standardized variables that we will be using for analysis are stored in the data frame ` df`.
+First, let's read in the ` wine` data frame and look at the variables. X is the observation ID, and Type is the wine type (i.e., the label), which is something we typically don't have when we do cluster analysis. We have some other variables that indicate alcohol content, alcalinity, magnesium, phenols and flavanoids, and other wine characteristics. We prepare the data set for cluster analysis by removing the first two variables (ID and wine type), and standardizing the remaining variables using the ` scale` command. These standardized variables that we will be using for analysis are stored in the data frame ` df`.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 wine <- read.csv("wine.csv")
@@ -36,7 +36,7 @@ df <- data.frame(scale(wine[-2:-1]))
 head(df)
 ```
 ## Scree Plot
-#### An appropriate cluster solution could be defined as the solution at which the reduction in SSE slows dramatically. This produces an "elbow" in the plot of SSE against cluster solutions. The figure indicates that there is a distinct drop in within groups sum of squares when moving from 1 to 3 clusters. After three clusters, this decrease drops off, suggesting that a 3-cluster solution may be a good fit to the data. 
+An appropriate cluster solution could be defined as the solution at which the reduction in SSE slows dramatically. This produces an "elbow" in the plot of SSE against cluster solutions. The figure indicates that there is a distinct drop in within groups sum of squares when moving from 1 to 3 clusters. After three clusters, this decrease drops off, suggesting that a 3-cluster solution may be a good fit to the data. 
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 wss <- (nrow(df)-1)*sum(apply(df,2,var))
@@ -48,9 +48,9 @@ plot(1:20, wss, type="b", xlab="Number of Clusters",
 
 ## ` NbClust` Approach for Determining Optimal Number of Clusters
 
-#### The ` NbClust` package has 30 different methods to determine the optimal number of clusters. We can select the ` index="alllong"` option and get the results from all 30 indices. (Many use the option ` index="all"` and get results from 26 most relevant indices). We then use the number of clusters that's chosen by the largest number of indices. See pp. 4-6 of this document: https://cran.r-project.org/web/packages/NbClust/NbClust.pdf. Note that not all 30 criteria can be calculated for every dataset. 
+The ` NbClust` package has 30 different methods to determine the optimal number of clusters. We can select the ` index="alllong"` option and get the results from all 30 indices. (Many use the option ` index="all"` and get results from 26 most relevant indices). We then use the number of clusters that's chosen by the largest number of indices. See pp. 4-6 of this document: https://cran.r-project.org/web/packages/NbClust/NbClust.pdf. Note that not all 30 criteria can be calculated for every dataset. 
 
-#### Here, we see that the 3-cluster solution is recommended by the largest number of methods, which is consistent with the Scree Plot.
+Here, we see that the 3-cluster solution is recommended by the largest number of methods, which is consistent with the Scree Plot.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 set.seed(1234)
@@ -65,9 +65,9 @@ barplot(table(nc$Best.n[1,]),
 
 ## Exploring the 3 Cluster Solution
 
-#### Since K-means cluster analysis starts with k randomly chosen centroids, a different solution can be obtained each time the function is invoked. We can use the ` set.seed()` function to guarantee that the results are reproducible. Additionally, this clustering approach can be sensitive to the initial selection of centroids. The ` kmeans()` function has an ` nstart` option that attempts multiple initial configurations and reports on the best one. For example, adding ` nstart=25`, as we do here, will generate 25 initial configurations. This approach is often recommended. More information may be found here: http://tagteam.harvard.edu/hub_feeds/1981/feed_items/240096. 
+Since K-means cluster analysis starts with k randomly chosen centroids, a different solution can be obtained each time the function is invoked. We can use the ` set.seed()` function to guarantee that the results are reproducible. Additionally, this clustering approach can be sensitive to the initial selection of centroids. The ` kmeans()` function has an ` nstart` option that attempts multiple initial configurations and reports on the best one. For example, adding ` nstart=25`, as we do here, will generate 25 initial configurations. This approach is often recommended. More information may be found here: http://tagteam.harvard.edu/hub_feeds/1981/feed_items/240096. 
 
-#### We can look at the size of each cluster as well. Here, we see that there are 62 observations in the 1st clusterr, 65 observations in the 2nd cluster, and 51 observations in the 3rd cluster.
+We can look at the size of each cluster as well. Here, we see that there are 62 observations in the 1st clusterr, 65 observations in the 2nd cluster, and 51 observations in the 3rd cluster.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 set.seed(1234)
@@ -76,14 +76,14 @@ fit.km <- kmeans(df, 3, nstart=25)
 fit.km$size
 ```
 
-#### In the code below, the ` fit.km$cluster` command provides the clustering results and ` fit.km$centers` command provides the centroid vector (i.e., the mean) for each cluster. However, these are means of the standardized variables that we subject to the cluster analysis.
+In the code below, the ` fit.km$cluster` command provides the clustering results and ` fit.km$centers` command provides the centroid vector (i.e., the mean) for each cluster. However, these are means of the standardized variables that we subject to the cluster analysis.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 round(fit.km$centers, 2)
 fit.km$cluster
 ```
 
-#### We can also calculate the average value of each of the original variables in the wine dataset within each cluster. Again, we're excluding the 1st two variables (ID and wine type) using the ` wine[-2:-1]` command.
+We can also calculate the average value of each of the original variables in the wine dataset within each cluster. Again, we're excluding the 1st two variables (ID and wine type) using the ` wine[-2:-1]` command.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 cbind(round(aggregate(wine[-2:-1], by=list(cluster=fit.km$cluster), mean),1),fit.km$size)
@@ -92,14 +92,14 @@ cbind(round(aggregate(wine[-2:-1], by=list(cluster=fit.km$cluster), mean),1),fit
 
 ## Evaluating the Results
 
-#### Because cluster analysis is a type of unsupervised learning (i.e., there's no label in the data set specifying which cluster the observations _actually_ belong to), in most instances the way to assess the quality of the cluster analysis is limited to interpretability and actionability of the solution. However, in our data set, there's a variable called ` Type` which tells us what type of wine each observation actually is. Because this is the case, we can see how well our cluster analysis results actually correspond to the actual wine type. Here's a cross-tabulation of the actual wine type and the cluster into which the wine is placed as a result of the analysis.
+Because cluster analysis is a type of unsupervised learning (i.e., there's no label in the data set specifying which cluster the observations _actually_ belong to), in most instances the way to assess the quality of the cluster analysis is limited to interpretability and actionability of the solution. However, in our data set, there's a variable called ` Type` which tells us what type of wine each observation actually is. Because this is the case, we can see how well our cluster analysis results actually correspond to the actual wine type. Here's a cross-tabulation of the actual wine type and the cluster into which the wine is placed as a result of the analysis.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 ct.km <- table(wine$Type, fit.km$cluster)
 ct.km
 ```
 
-#### In addition, we can quantify the agreement between type and cluster, using an adjusted Rand index provided by the flexclust package. The adjusted Rand index provides a measure of the agreement between two partitions, adjusted for chance. It ranges from -1 (no agreement) to 1 (perfect agreement). Agreement between the wine varietal type and the cluster solution is 0.9. Not bad at all.
+In addition, we can quantify the agreement between type and cluster, using an adjusted Rand index provided by the flexclust package. The adjusted Rand index provides a measure of the agreement between two partitions, adjusted for chance. It ranges from -1 (no agreement) to 1 (perfect agreement). Agreement between the wine varietal type and the cluster solution is 0.9. Not bad at all.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 round(randIndex(ct.km),1)

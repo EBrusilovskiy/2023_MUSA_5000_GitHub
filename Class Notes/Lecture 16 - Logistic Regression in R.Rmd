@@ -1,13 +1,13 @@
 ---
 title: "Lecture 16 - Logistic Regression in R"
 author: "Eugene Brusilovskiy"
-date: "11/4/2022"
+date: "`r Sys.Date()`"
 output: rmdformats::readthedown
 ---
 
 ## Setting Everything Up
 
-#### We install a number of packages that we need in order to run logistic regression in R and specify the directory where our data are stored.
+We install a number of packages that we need in order to run logistic regression in R and specify the directory where our data are stored.
 
 ```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
@@ -37,11 +37,11 @@ library(xtable)
 
 ## Looking at the Data Set
 
-#### Our (fictitious) data set has 300 zip codes. The relevant variables are described below:
-#### -- Dependent Variable: ` Hospital`, where 0 means there's no hospital in the zip code and 1 means there is a hospital in the zip code 
-#### -- Predictor: ` Population`, which is the number of people who live in the zip code
-#### -- Predictor: ` NearbyHospital`, which is a binary indicator of whether there's a hospital in a nearby zip code (1=yes, 0=no). 
-#### -- Predictor: ` Urban`, which is an indicator of whether the zip code is urban (1=yes, 0=no)
+Our (fictitious) data set has 300 zip codes. The relevant variables are described below:
+-- Dependent Variable: ` Hospital`, where 0 means there's no hospital in the zip code and 1 means there is a hospital in the zip code 
+-- Predictor: ` Population`, which is the number of people who live in the zip code
+-- Predictor: ` NearbyHospital`, which is a binary indicator of whether there's a hospital in a nearby zip code (1=yes, 0=no). 
+-- Predictor: ` Urban`, which is an indicator of whether the zip code is urban (1=yes, 0=no)
 
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
@@ -51,7 +51,7 @@ head(mydata)
 
 ## Tabulation of the Dependent Variable
 
-#### Let's look at the tabulation of our binary dependent variable, ` Hospital`.
+Let's look at the tabulation of our binary dependent variable, ` Hospital`.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 #summary(mydata)
@@ -59,17 +59,17 @@ table(mydata$Hospital)
 prop.table(table(mydata$Hospital))
 ```
 
-#### We see that there are 153 (51%) zip codes which have a hospital, and 147 (49%) zip codes which don't have a hospital. That is,  the probability of there being a hospital in the zip code can be calculated using the formula
+We see that there are 153 (51%) zip codes which have a hospital, and 147 (49%) zip codes which don't have a hospital. That is,  the probability of there being a hospital in the zip code can be calculated using the formula
 
 $$Probability(Hospital) = \frac{Number \; of \; Zip \; Codes \; with \; a \; Hospital}{Total \; Number \; of \; Zip \; Codes} = \frac{153}{300} = .51. $$
 
-#### Similarly, the odds of there being a hospital in a zip code can be calculated using the formula
+Similarly, the odds of there being a hospital in a zip code can be calculated using the formula
 
 $$Odds(Hospital) = \frac{Number \; of \; Zip \; Codes \; with \; a \; Hospital}{Number \; of \; Zip \; Codes \; without \; a \; Hospital} = \frac{153}{147} = 1.04. $$
 
 ## Intercept-Only Logistic Regression
 
-#### Now, let's run an intercept-only logistic regression model. As a reminder, if we were to run an intercept-only model in OLS, then the intercept $\beta_0$ would simply be the average value of the dependent variable in the data set, because there are no predictors to set to 0. Similarly, in logistic regression, $\beta_0$ is the log odds of the dependent variable taking on the value of 1 (i.e., log odds of there being a hospital in the zip code). Here, these  log odds = .04001. To calculate the odds of there being a hospital in a zip code, we simply exponentiate these log odds. So when we exponentiate $\beta_0$, we get e^.04001^=1.04, which is exactly the same as the odds we calculated above.
+Now, let's run an intercept-only logistic regression model. As a reminder, if we were to run an intercept-only model in OLS, then the intercept $\beta_0$ would simply be the average value of the dependent variable in the data set, because there are no predictors to set to 0. Similarly, in logistic regression, $\beta_0$ is the log odds of the dependent variable taking on the value of 1 (i.e., log odds of there being a hospital in the zip code). Here, these  log odds = .04001. To calculate the odds of there being a hospital in a zip code, we simply exponentiate these log odds. So when we exponentiate $\beta_0$, we get e^.04001^=1.04, which is exactly the same as the odds we calculated above.
 
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
@@ -81,13 +81,13 @@ OR
 
 
 ## Logistic Regression with 1 Continuous Predictor (` Population`)
-#### First, let's look at the summary of the predictor variable ` Population`. We see that the average population of a zip code is 5777, and the minimum value is 495, meaning that there are no zip codes with a population below 495 in our data. 
+First, let's look at the summary of the predictor variable ` Population`. We see that the average population of a zip code is 5777, and the minimum value is 495, meaning that there are no zip codes with a population below 495 in our data. 
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 summary(mydata$Population)
 ```
 
-#### Now, let's run a simple logistic regression (i.e., logistic regression with 1 predictor). When we look at the results, we see that both the intercept and the predictor (` Population`) are significant. The estimated value of $\beta_0$, or the intercept, is -7.2967, and can be interpreted as the log odds of there being a hospital in a zip code where ` Population` is 0. Exponentiating these log odds gives us the odds of there being a hospital in a zip code where the population is 0, which are calculated to be e^-7.2967^ = .0006777395. These are very low odds, but once again, we don't have any zip codes where population is below 495 in our data. If we look at $\beta_1$, or the coefficient of the ` Population` predictor, we see that it is .001357. Said differently, as the population in a zip code increases by 1 unit (i.e., 1 person), the log odds of there being a hospital in the zip code goes up by .001357. We can convert the log odds to odds by exponentiating $\beta_1$, which gives us e^.001357^ = 1.001358. In other words, as the population goes up by 1 person, the odds of there being a hospital in a zip code go up by a factor of 1.001358.
+Now, let's run a simple logistic regression (i.e., logistic regression with 1 predictor). When we look at the results, we see that both the intercept and the predictor (` Population`) are significant. The estimated value of $\beta_0$, or the intercept, is -7.2967, and can be interpreted as the log odds of there being a hospital in a zip code where ` Population` is 0. Exponentiating these log odds gives us the odds of there being a hospital in a zip code where the population is 0, which are calculated to be e^-7.2967^ = .0006777395. These are very low odds, but once again, we don't have any zip codes where population is below 495 in our data. If we look at $\beta_1$, or the coefficient of the ` Population` predictor, we see that it is .001357. Said differently, as the population in a zip code increases by 1 unit (i.e., 1 person), the log odds of there being a hospital in the zip code goes up by .001357. We can convert the log odds to odds by exponentiating $\beta_1$, which gives us e^.001357^ = 1.001358. In other words, as the population goes up by 1 person, the odds of there being a hospital in a zip code go up by a factor of 1.001358.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 mylogit <- glm(Hospital ~ Population, data = mydata, family = "binomial") #Run a logit model
@@ -96,7 +96,7 @@ OR <- exp(coefficients(mylogit))  #odds ratio (exponentiated coefficients)
 OR
 ```
 
-#### We can also calculate the 95% confidence intervals for the beta coefficients, and exponentiate them to get the 95% confidence intervals for the odds ratios:
+We can also calculate the 95% confidence intervals for the beta coefficients, and exponentiate them to get the 95% confidence intervals for the odds ratios:
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 confint.default(mylogit)  #95% confidence intervals
@@ -104,7 +104,7 @@ exp(cbind(OR = coef(mylogit), confint(mylogit)))  #Exponentiating coefficients a
 ```
 
 
-#### Although we do not have R^2^ as part of logistic regression output when using the ` glm` function, we can obtain it when we run logistic regression using the ` rms` package in R. The output of the ` rms` package (using the ` lrm` command below) gives us the R^2^ as part of the output. Be careful about using R^2^ in logistic regression, and in any model not estimated with least squares. It doesn't have the same interpretation as in OLS, and the only thing we can say about it is that higher values are better.
+Although we do not have R^2^ as part of logistic regression output when using the ` glm` function, we can obtain it when we run logistic regression using the ` rms` package in R. The output of the ` rms` package (using the ` lrm` command below) gives us the R^2^ as part of the output. Be careful about using R^2^ in logistic regression, and in any model not estimated with least squares. It doesn't have the same interpretation as in OLS, and the only thing we can say about it is that higher values are better.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 lrm(Hospital ~ Population, data=mydata)
@@ -112,35 +112,35 @@ lrm(Hospital ~ Population, data=mydata)
 
 
 ## Logistic Regression with 1 Binary Predictor (` Urban`)
-#### Before we run a logistic regression with 1 binary predictor (which looks at whether the zip code is urban), let's look at the cross-tabulation between our dependent variable, ` Hospital`, and this predictor (` Urban`). We see from the cross-tabulation that out of the 152 non-urban zip codes, 80 (52.6%) have hospitals and 72 (47.4%) do not. We also see that out of the 148 urban zip codes, 73 (49.3%) have hospitals, and 75 (50.7%) do not.
+Before we run a logistic regression with 1 binary predictor (which looks at whether the zip code is urban), let's look at the cross-tabulation between our dependent variable, ` Hospital`, and this predictor (` Urban`). We see from the cross-tabulation that out of the 152 non-urban zip codes, 80 (52.6%) have hospitals and 72 (47.4%) do not. We also see that out of the 148 urban zip codes, 73 (49.3%) have hospitals, and 75 (50.7%) do not.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 CrossTable(mydata$Hospital, mydata$Urban,prop.r=FALSE,prop.chisq=FALSE, chisq=FALSE,prop.t=FALSE)
 ```
 
-#### Let's calculate the odds of there being a hospital in non-urban and urban zip codes, respectively:
+Let's calculate the odds of there being a hospital in non-urban and urban zip codes, respectively:
 
 $$Odds(Hospital|Not \; Urban) = \frac{Number \; of \; Not \; Urban \; Zip \; Codes \; with \; a \; Hospital}{Number \; of \;Not \; Urban \; Zip \; Codes \; without \; a \; Hospital} = \frac{80}{72} = 1.11, $$
 
 
-#### and
+and
 
 
 $$Odds(Hospital|Urban) = \frac{Number \; of \;  Urban \; Zip \; Codes \; with \; a \; Hospital}{Number \; of  \; Urban \; Zip \; Codes \; without \; a \; Hospital} = \frac{73}{75} = .97. $$
 
 
-#### We can also calculate the ratio of these two odds: 
+We can also calculate the ratio of these two odds: 
 
 
 $$\frac{Odds(Hospital|Urban)}{Odds(Hospital|Not \; Urban)}=\frac{Odds(Hospital|Urban=1)}{Odds(Hospital|Urban=0)}=\frac{.97}{1.11}=.876, $$
 
-#### or, alternatively,
+or, alternatively,
 
 
 $$\frac{Odds(Hospital|Not \; Urban)}{Odds(Hospital| Urban)}=\frac{Odds(Hospital|Urban=0)}{Odds(Hospital|Urban=1)}=\frac{1.11}{.97}=\frac{1}{.876}=1.14. $$
 
 
-#### Now, let's run the logistic regression. 
+Now, let's run the logistic regression. 
 
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
@@ -150,9 +150,9 @@ OR <- exp(coef(mylogit))   #Odds Ratios
 OR
 ```
 
-#### We see that $\beta_0$ = .1054, indicating that when ` Urban` = 0, the log odds of there being a hospital in the zip code are .1054. Here, ` Urban` = 0 has a clear interpretation -- these are simply non-urban zip codes. So, the odds of there being a hospital in a non-urban zip code can be calculated as e^.1054^ = 1.11, which exactly what we saw in our cross-tabulation and calculations above. 
+We see that $\beta_0$ = .1054, indicating that when ` Urban` = 0, the log odds of there being a hospital in the zip code are .1054. Here, ` Urban` = 0 has a clear interpretation -- these are simply non-urban zip codes. So, the odds of there being a hospital in a non-urban zip code can be calculated as e^.1054^ = 1.11, which exactly what we saw in our cross-tabulation and calculations above. 
 
-#### As for $\beta_1$, the coefficient of ` Urban`, it is -.1324. Although it is not statistically significant here (p > .05), let's pretend that it is and interpret it for the sake of the example. As ` Urban` goes up by 1 unit (i.e., as we go from a non-urban zip code where ` Urban` = 0 to an urban zip code where ` Urban` = 1), the log odds of there being a hospital in a zip code change by -.1324. Said differently, as ` Urban` goes up by 1 unit (i.e., as we go from a non-urban zip code to an urban zip code), the odds of there being a hospital in the zip code change by a factor of e^-.1324^ = .876. And this, once again, is consistent with our calculation earlier of 
+As for $\beta_1$, the coefficient of ` Urban`, it is -.1324. Although it is not statistically significant here (p > .05), let's pretend that it is and interpret it for the sake of the example. As ` Urban` goes up by 1 unit (i.e., as we go from a non-urban zip code where ` Urban` = 0 to an urban zip code where ` Urban` = 1), the log odds of there being a hospital in a zip code change by -.1324. Said differently, as ` Urban` goes up by 1 unit (i.e., as we go from a non-urban zip code to an urban zip code), the odds of there being a hospital in the zip code change by a factor of e^-.1324^ = .876. And this, once again, is consistent with our calculation earlier of 
 
 $$ \frac{Odds(Hospital|Urban)}{Odds(Hospital|Not \; Urban)} = .876. $$
 
@@ -160,7 +160,7 @@ $$ \frac{Odds(Hospital|Urban)}{Odds(Hospital|Not \; Urban)} = .876. $$
 
 ## Multiple Logistic Regression
 
-#### First, as an aside, if we had categorical predictors, we would need to use the ` factor` command to treat ` NearbyHospital` and ` Urban` as categorical variables. This isn't really necessary for binary variables, but needed for variables which have more than 2 categories. That is, for a categorical variable with _k_ categories, we would create _k_ dummies and include _k_-1 of them in the regression, as we discussed earlier in the semester.
+First, as an aside, if we had categorical predictors, we would need to use the ` factor` command to treat ` NearbyHospital` and ` Urban` as categorical variables. This isn't really necessary for binary variables, but needed for variables which have more than 2 categories. That is, for a categorical variable with _k_ categories, we would create _k_ dummies and include _k_-1 of them in the regression, as we discussed earlier in the semester.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 mydata$NearbyHospital <- factor(mydata$NearbyHospital)
@@ -168,7 +168,7 @@ mydata$Urban <- factor(mydata$Urban)
 summary(mydata)
 ```
 
-#### Now, let's run the multiple logistic regression:
+Now, let's run the multiple logistic regression:
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 options(scipen=999)
@@ -178,35 +178,35 @@ summary(mylogit)
 cbind (mylogit$coefficients, exp(cbind(OR = coef(mylogit), confint(mylogit))))
 ```
 
-#### Let's quickly interpret the results. Again, when we look at the p-values (column ` Pr(>|z|)`, only population is a significant predictor of our dependent variable, but for the sake of the example, let's pretend that all 3 predictors are significant:
-#### -- First of all, the intercept $\beta_0$ = -7.522, and the associated odds ratio = e^$\beta_0$^ = e^-7.522^ = .000541. This means that the odds of there being a hospital in a zip code where all 3 predictors are 0 (i.e., ` Population` = 0, ` Urban` = 0, meaning it's a non-urban zip code, and ` NearbyHospital` = 0, meaning that there's no hospital in a nearby zip code) are .000541.
-#### -- $\beta_1$, the coefficient of the first predictor, ` Population`, is .0013654, and the associated odds ratio, e^$\beta_1$^ = 1.0014. This means that when urbanicity and the presence of a hospital in a nearby zip code are held constant, the odds of there being a hospital go up by a factor of 1.0014 as the population of the zip code goes up by 1 person. Similarly, if the population were to go up by, say, 500 people, the odds of there being a hospital in the zip code would go up by a factor of e^500$\beta_1$^ = 1.979.
-#### -- $\beta_2$, the coefficient of the second predictor, ` NearbyHospital`, is .56, and the associated odds ratio is 1.75. This means that, holding other predictors constant, as ` NearbyHospital` goes up by 1 unit (i.e., goes from 0 to 1 in this case), the odds of there being a hospital in the zip code go up by a factor of 1.75.
-#### -- The interpretation of $\beta_3$, which is the coefficient of ` Urban`, as well as the associated odds ratio, is left as an exercise for the student.
+Let's quickly interpret the results. Again, when we look at the p-values (column ` Pr(>|z|)`, only population is a significant predictor of our dependent variable, but for the sake of the example, let's pretend that all 3 predictors are significant:
+-- First of all, the intercept $\beta_0$ = -7.522, and the associated odds ratio = e^$\beta_0$^ = e^-7.522^ = .000541. This means that the odds of there being a hospital in a zip code where all 3 predictors are 0 (i.e., ` Population` = 0, ` Urban` = 0, meaning it's a non-urban zip code, and ` NearbyHospital` = 0, meaning that there's no hospital in a nearby zip code) are .000541.
+-- $\beta_1$, the coefficient of the first predictor, ` Population`, is .0013654, and the associated odds ratio, e^$\beta_1$^ = 1.0014. This means that when urbanicity and the presence of a hospital in a nearby zip code are held constant, the odds of there being a hospital go up by a factor of 1.0014 as the population of the zip code goes up by 1 person. Similarly, if the population were to go up by, say, 500 people, the odds of there being a hospital in the zip code would go up by a factor of e^500$\beta_1$^ = 1.979.
+-- $\beta_2$, the coefficient of the second predictor, ` NearbyHospital`, is .56, and the associated odds ratio is 1.75. This means that, holding other predictors constant, as ` NearbyHospital` goes up by 1 unit (i.e., goes from 0 to 1 in this case), the odds of there being a hospital in the zip code go up by a factor of 1.75.
+-- The interpretation of $\beta_3$, which is the coefficient of ` Urban`, as well as the associated odds ratio, is left as an exercise for the student.
 
 
 
 ## Sensitivity, Specificity and Misclassification Rates
-#### One way to assess how well our logistic regression performs is by examining the sensitivity (% of zip codes that actually have hospitals and have high predicted probabilities of having a hospital), specificity (% of zip codes that actually don't have hospitals and have low predicted probabilities of having a hospital), and the misclassification rate. To do this, we first need to get the predicted values from the model. These predicted values (y-hats) are the predicted probabilities of there being a hospital in each zip code.
+One way to assess how well our logistic regression performs is by examining the sensitivity (% of zip codes that actually have hospitals and have high predicted probabilities of having a hospital), specificity (% of zip codes that actually don't have hospitals and have low predicted probabilities of having a hospital), and the misclassification rate. To do this, we first need to get the predicted values from the model. These predicted values (y-hats) are the predicted probabilities of there being a hospital in each zip code.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 fit <- mylogit$fitted       #Getting the y-hats (i.e., predicted values)
 hist(fit)       #Histogram of fitted values
 ```
 
-#### When we look at the histogram of these predicted probabilities, we might want to define a high probability of there being a hospital in a zip code at .5 or higher, and a low probability of there being a hospital in a zip code at less than .5. Although .5 is a somewhat arbitrary guess for a cut-off, let's generate a dummy variable ` fit.binary` that sets the predicted values of y, ` fit`, to 1 if it's .5 or greater and to 0 otherwise.
+When we look at the histogram of these predicted probabilities, we might want to define a high probability of there being a hospital in a zip code at .5 or higher, and a low probability of there being a hospital in a zip code at less than .5. Although .5 is a somewhat arbitrary guess for a cut-off, let's generate a dummy variable ` fit.binary` that sets the predicted values of y, ` fit`, to 1 if it's .5 or greater and to 0 otherwise.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 fit.binary = (fit>=0.5)
 ```
 
-#### Now, let's do a cross-tabulation between the actual values of our dependent variable, ` Hospital`, and ` fit.binary`.
+Now, let's do a cross-tabulation between the actual values of our dependent variable, ` Hospital`, and ` fit.binary`.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 CrossTable(fit.binary, mydata$Hospital, prop.r=FALSE, prop.t=FALSE, prop.chisq=FALSE)
 ```
 
-#### Based on this cross-tabulation, we can calculate the sensitivity (% of actual positives correctly identified as such), specificity (% of actual negatives correctly identified as such) and the misclassification rate of the model:
+Based on this cross-tabulation, we can calculate the sensitivity (% of actual positives correctly identified as such), specificity (% of actual negatives correctly identified as such) and the misclassification rate of the model:
 
 $$ Sensitivity = \frac{124}{29+124} = \frac{124}{153} = .81 $$
 $$ Specificity = \frac{129}{129+18} = \frac{129}{147} = .88 $$
@@ -214,14 +214,14 @@ $$ Correct \; Classification \; Rate = \frac{129+124}{300} = \frac{253}{300} = .
 $$ Misclassification \; Rate = 1 - Correct \; Classification \; Rate = 1-\frac{253}{300}=\frac{47}{300} = .16$$
 
 
-#### We can also repeat this process with a different probability cut-off (i.e., .3 instead of .5). 
+We can also repeat this process with a different probability cut-off (i.e., .3 instead of .5). 
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 fit.binary = (fit>=0.3)
 CrossTable(fit.binary, mydata$Hospital, prop.r=FALSE, prop.t=FALSE, prop.chisq=FALSE)
 ```
 
-#### We see that when .3 is chosen as the cut-off for a high probability of there being a hospital in a zip code, the misclassification rate goes down from 47/300 (.16) to 38/300 (.13). The sensitivity also goes up, though the specificity goes down by a little bit (from .88 to .84).
+We see that when .3 is chosen as the cut-off for a high probability of there being a hospital in a zip code, the misclassification rate goes down from 47/300 (.16) to 38/300 (.13). The sensitivity also goes up, though the specificity goes down by a little bit (from .88 to .84).
 
 $$ Sensitivity = \frac{138}{15+138} = \frac{138}{153} = .90 $$
 $$ Specificity = \frac{124}{124+23} = \frac{124}{147} = .84 $$
@@ -231,9 +231,9 @@ $$ Misclassification \; Rate = 1 - Correct \; Classification \; Rate = 1-\frac{2
 
 
 ## ROC Curve
-#### Because we don't want to manually try out multiple probability cut-offs, it makes sense for us to generate the ROC package. For more info on the ` ROCR` package used here, see: https://hopstat.wordpress.com/2014/12/19/a-small-introduction-to-the-rocr-package/
+Because we don't want to manually try out multiple probability cut-offs, it makes sense for us to generate the ROC package. For more info on the ` ROCR` package used here, see: https://hopstat.wordpress.com/2014/12/19/a-small-introduction-to-the-rocr-package/
 
-#### First, let's create ` a`, which is a matrix combining the vectors containing the actual values of the dependent variable (` mydata$Hospital`) and the predicted probabilities, stored as ` fit`. 
+First, let's create ` a`, which is a matrix combining the vectors containing the actual values of the dependent variable (` mydata$Hospital`) and the predicted probabilities, stored as ` fit`. 
 
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
@@ -241,9 +241,9 @@ a <- cbind(mydata$Hospital, fit)
 head(a)
 ```
 
-#### To summarize, we see that matrix ` a` has 2 columns. The first one is ` mydata$Hospital`, which are actual values of the depenent variable (i.e., labels), and the second one is ` fit`, which are predicted, or fitted values of y (i.e., predictions).
+To summarize, we see that matrix ` a` has 2 columns. The first one is ` mydata$Hospital`, which are actual values of the depenent variable (i.e., labels), and the second one is ` fit`, which are predicted, or fitted values of y (i.e., predictions).
 
-#### Let's make the names of the variables easy to understand, and call the two columns above ` labels` and ` predictions`, respsectively. We will then convert the matrix ` a` to a data frame called ` roc`.
+Let's make the names of the variables easy to understand, and call the two columns above ` labels` and ` predictions`, respsectively. We will then convert the matrix ` a` to a data frame called ` roc`.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 colnames(a) <- c("labels","predictions")
@@ -251,13 +251,13 @@ head(a)
 roc <- as.data.frame(a)
 ```
 
-#### Now, let's convert the data frame ` roc` to a prediction object, which is necessary for the generating the ROC plot with the ` ROCR` package. We do this using the ` prediction` command below. The order of the columns should be as below -- first the predictions, and then the actual values of the dependent variable.
+Now, let's convert the data frame ` roc` to a prediction object, which is necessary for the generating the ROC plot with the ` ROCR` package. We do this using the ` prediction` command below. The order of the columns should be as below -- first the predictions, and then the actual values of the dependent variable.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 pred <- prediction(roc$predictions, roc$labels)
 ```
 
-#### Now, let's plot the ROC curve, which takes the ` pred` object above as the input. On the y-axis, we have the True Positive Rate (` tpr` in the code below), which is another term for sensitivity. On the x-axis, we have the False Positive Rate (` fpr` in the code below), which is calculated as 1 - specificity. We also use the ` abline` command to plot the 45 degree line.
+Now, let's plot the ROC curve, which takes the ` pred` object above as the input. On the y-axis, we have the True Positive Rate (` tpr` in the code below), which is another term for sensitivity. On the x-axis, we have the False Positive Rate (` fpr` in the code below), which is calculated as 1 - specificity. We also use the ` abline` command to plot the 45 degree line.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 roc.perf = performance(pred, measure = "tpr", x.measure="fpr")
@@ -265,9 +265,9 @@ plot(roc.perf)
 abline(a=0,b=1)
 ```
 
-#### In addition, if we want to weigh specificity and sensitivity equally, we can calculate the optimal probability cut-off. There are a couple ways to do so. One way is called the Youden Index, which identifies the cut-off probability that corresponds to the maximum possible sum of sensitivity and specificity. 
+In addition, if we want to weigh specificity and sensitivity equally, we can calculate the optimal probability cut-off. There are a couple ways to do so. One way is called the Youden Index, which identifies the cut-off probability that corresponds to the maximum possible sum of sensitivity and specificity. 
 
-#### Another approach, calculated using the code below, is the cut-off value for which the ROC curve has the minimum distance from the upper left corner of the graph, where both specificity = 1 and sensitivity = 1. Because we are minimizing the distance from the upper left corner of the graph, where y = Sensitivity = True Positive Rate = ` tpr` = 1 and x = 1 - Specificity = False Positive Rate = ` fpr` = 0, the formula ` d = (x - 0)^2 + (y-1)^2` is used in the code below. We see that here, the cut-off that minimizes the distance from the upper left corner of the ROC curve is .336, and it corresponds to a sensitivity of .889 and a specificty of .864.
+Another approach, calculated using the code below, is the cut-off value for which the ROC curve has the minimum distance from the upper left corner of the graph, where both specificity = 1 and sensitivity = 1. Because we are minimizing the distance from the upper left corner of the graph, where y = Sensitivity = True Positive Rate = ` tpr` = 1 and x = 1 - Specificity = False Positive Rate = ` fpr` = 0, the formula ` d = (x - 0)^2 + (y-1)^2` is used in the code below. We see that here, the cut-off that minimizes the distance from the upper left corner of the ROC curve is .336, and it corresponds to a sensitivity of .889 and a specificty of .864.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 opt.cut = function(perf, pred){
@@ -283,14 +283,19 @@ print(opt.cut(roc.perf, pred))
 ```
 
 
-#### Finally, we can also calculate the area under the curve, which is a measure of how well the model predicts 1 responses as 1's and 0 responses as 0's. Accuracy is measured by the area under the ROC curve. An area of 1 represents a perfect test (prediction); an area of .5 represents a worthless test (prediction). A rough guide for interpreting area under ROC Curves is below:
-#### .90-1 = excellent (A)
-#### .80-.90 = good    (B)
-#### .70-.80 = fair    (C)
-#### .60-.70 = poor    (D)
-#### .50-.60 = fail    (F)
+Finally, we can also calculate the area under the curve, which is a measure of how well the model predicts 1 responses as 1's and 0 responses as 0's. Accuracy is measured by the area under the ROC curve. An area of 1 represents a perfect test (prediction); an area of .5 represents a worthless test (prediction). A rough guide for interpreting area under ROC Curves is below:
 
-#### These might be somewhat conservative estimates, and there will be statisticians who will say that area > .7 is just fine. In our case, the area under the curve is .93, which is excellent.
+.90-1 = excellent (A)
+
+.80-.90 = good    (B)
+
+.70-.80 = fair    (C)
+
+.60-.70 = poor    (D)
+
+.50-.60 = fail    (F)
+
+These might be somewhat conservative estimates, and there will be statisticians who will say that area > .7 is just fine. In our case, the area under the curve is .93, which is excellent.
 
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
