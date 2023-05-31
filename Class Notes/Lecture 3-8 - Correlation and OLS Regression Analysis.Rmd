@@ -1,0 +1,464 @@
+---
+title: "Correlation and OLS Regression"
+author: "Eugene Brusilovskiy"
+date: "`r Sys.Date()`"
+output:  rmdformats::readthedown
+---
+
+## Introduction
+
+In this R Markdown, we will cover the R code for correlation and OLS regression analysis. This markdown is meant to serve as a companion to the lecture slides, and doesn't go into detail when interpreting the output. 
+
+```{r warning=FALSE, message=FALSE}
+library(Hmisc)
+library(DAAG)
+library(car)  #to calculate VIF
+library(MASS)
+library(rsq)
+library(tidyverse)
+library(caret)
+library(dplyr)
+```
+
+## Correlations
+
+In this particular instance, we are importing a data set called `mydata` with 4 observations: `X`, `Y`, `RankX` and `RankY`. I generated the data set such that `X` is a sequence of integers between 1 and 100, `Y` is calculated as `exp(X)`, and `RankX` and `RankY` are the ranks of `X` and `Y`, respectively, such that the smallest value of a variable has the smallest rank, the second smallest value has the second smallest rank, and so on.
+
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+setwd("C:/Users/eugeneby/Dropbox/Documents/Work and School/Teaching/CPLN 671 - Statistics and Data Mining/Data/Lecture 3 - R")
+mydata <- read.csv("Pearson_Spearman_Correlations.csv")
+options(scipen = 999)
+```
+
+Let's view the first few rows of the data and look at summary statistics of each variable.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+head(mydata)
+summary(mydata)
+```
+
+We can also create a scatter plot between variables `X` and `Y` in data frame `mydata`. The exponential relationship between the two variables is evident in the scatter plot.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+plot(mydata$X, mydata$Y)
+```
+
+Now, let's look at the Pearson and Spearman correlation between variables `X` and `Y` in data frame `mydata`.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+cor(mydata$X, mydata$Y, method="pearson")       #method can be pearson or spearman
+cor(mydata$X, mydata$Y, method="spearman")
+```
+
+In the results above, note that the Perason and Spearman correlations are substantially different. Becase the variables were defined such that the relationship between `X` and `Y` is not linear but exponential, it's not surprising that the Pearson correlation coefficient, which measures the strength of the linear association, is relatively small. However, recall that Spearman correlation is simply the Pearson correlation coefficient of the ranks, and because `Y` always goes up as `X` goes up, the Spearman correlation coefficient here is 1. Said differently, looking at the Spearman correlation between `X` and `Y` is the same as looking at the Pearson correlation between `RankX` and `RankY`.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+cor(mydata$RankX, mydata$RankY, method="pearson")
+```
+
+We can also look at the correlation matrix for all variables in the data set `mydata`
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+cor(mydata)
+```
+
+We can also use R to run hypothesis tests - that is, examine whether the Pearson correlation between `X` and `Y` is significant. In the example below, the p-value is 0.01142 - since it's significantly lower than 0.05, we reject the null hypothesis that the population correlation coefficient ρ = 0.
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+cor.test(mydata$X, mydata$Y, method=("pearson"))
+```
+
+The p-value for the Spearman correlation coefficient is infinitesimally small, so we can definitely reject H0 that ρ = 0.
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+cor.test(mydata$X, mydata$Y, method=("spearman"))
+```
+
+Note that the `cor.test` command can only be applied to a pair of variables, and not to a data frame. While the `cor(mydata)` command presents a correlation matrix, the  command `cor.test(mydata)`  yields an error.
+
+However, sometimes it's really convenient to get p-values as a matrix, and the `Hmisc` package allows us to do that. We can do this for both Pearson and Spearman correlations. 
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+pearson <- rcorr(as.matrix(mydata), type="pearson")                            
+pearson$r                    # correlation matrix (r's)
+pearson$P                    # p-values for the correlation matrix
+```
+
+
+In this example, note that the p-values for the Spearman correlations are rounded down to 0, however a p-value is never exactly 0. When reporting the p-value we can simply write that it's <0.0001.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+spearman <- rcorr(as.matrix(mydata), type="spearman")                            
+spearman$r                    # correlation matrix (r's)
+spearman$P                    # p-values for the correlation matrix
+```
+
+What if we wanted to look at a correlation matrix that contained correlations, scatter plots and histograms all in one? We could do this using the `pairs` command in `R base`, though first we need to set up the function to indicate that in the upper panel we want to show the correlations and in the lower panel we want to show the histograms. This is a convenient tool that you should feel free to use in your homework assignments.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+#Setting up the function to show correlations such that higher correlations are in a larger font
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
+  usr <- par("usr")
+  on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- abs(cor(x, y, use = "complete.obs"))
+  txt <- format(c(r, 0.123456789), digits = digits)[1]
+  txt <- paste(prefix, txt, sep = "")
+  if (missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+  text(0.5, 0.5, txt, cex =  cex.cor * (1 + r) / 2)
+}
+
+#Setting up the function to show histograms on the main diagonal
+panel.hist <- function(x, ...) {
+  usr <- par("usr")
+  on.exit(par(usr))
+  par(usr = c(usr[1:2], 0, 1.5) )
+  h <- hist(x, plot = FALSE)
+  breaks <- h$breaks
+  nB <- length(breaks)
+  y <- h$counts
+  y <- y/max(y)
+  rect(breaks[-nB], 0, breaks[-1], y, col = "white", ...)
+}
+
+#Here we go!
+pairs(
+  mydata,
+  upper.panel = panel.cor,
+  diag.panel  = panel.hist,
+  lower.panel = panel.smooth
+)
+```
+
+## Simple Regression
+
+Now, let's move on to simple OLS regression - that is, regression with one predictor. Here, we are importing the data set that we used in class, which looks at the relationship between age of kids and their vocabulary (i.e., how many words they know). Let's import the data and look at the first few rows.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+setwd("C:\\Users\\eugeneby\\Dropbox\\Documents\\Work and School\\Teaching\\CPLN 671 - Statistics and Data Mining\\2023_MUSA_5000_GitHub\\Data\\Lecture 4 and 5 - R")
+simpleregdata <- read.csv("Age - Vocabulary Example.csv")
+head(simpleregdata)
+```
+
+Now, let's look at summary statistics of each variable. We see that the average age of the kids in our data set is 5, and the average vocabulary is 1530 words.
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+summary(simpleregdata)
+```
+
+We can create a scatter plot to see whether the line can approximate the relationship between the two variables. It looks like it will approximate the relationship fairly well.
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+plot(simpleregdata$ChildAge, simpleregdata$Vocabulary)
+```
+
+Without further ado, let's run a simple regression, where we regress vocabulary (dependent variable) on age (predictor)
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+options(scipen = 999)
+fit <- lm(Vocabulary ~ ChildAge, data=simpleregdata)
+summary(fit)
+```
+
+In the output above, we can see the estimates of the intercept (-336.67) and the beta coefficient associated with the `ChildAge` variable (373.33). We can also see the p-values (0.0585 and 0.0000012, respectively).
+
+Let's look at some other useful functions:
+
+We can extract the model coefficients by using the `coefficients` command: 
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+coefficients(fit) 
+```
+
+We can also get confidence intervals for the coefficients. Here, we choose 95% confidence intervals, but we can choose any confidence level. 
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+confint(fit, level=0.95) 
+```
+
+There is another way to obtain coefficients, and to extract other information from the regression summary, as shown below.
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+summary(fit)$coefficients
+tvals <- summary(fit)$coefficients[,3]  #3rd column in coefficients matrix
+tvals
+pvals <- summary(fit)$coefficients[,4]  #4th column in coefficients matrix
+pvals
+```
+
+Below are some important functions that we will be using regularly. They allow us to save the fitted - or predicted - values (y-hats), as well as residuals and standardized residuals, as columns in the data frame `simpleregdata`. 
+
+For instance, we are saving the predicted values as variable `predvals`, residuals as variable `resids`, and standardized residuals as variable `stdres` in the data frame `simpleregdata`. 
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+simpleregdata$predvals <- fitted(fit) 
+simpleregdata$resids <- residuals(fit)
+simpleregdata$stdres <- rstandard(fit)
+```
+
+Now, let's look at the first few rows of the data frame `simpleregdata` and we will see that these variables are in there.
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+head(simpleregdata)
+```
+
+We can also look at the histogram of the residuals by using the `hist` command:
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+hist(simpleregdata$resids)
+```
+
+Now that we have residuals and predicted values saved as variables in the data frame, we can go ahead and calculate the sum of squared errors (SSE), total sum of squares (SST), and regression sum of squares (SSR) manually below.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+SSE <- sum(simpleregdata$resids^2)
+                #(y                  - y-bar)^2
+SST <- sum((simpleregdata$Vocabulary-mean(simpleregdata$Vocabulary))^2)
+SSR <- SST - SSE
+```
+
+From this, we can also calculate the R-square (which appears in the regression output above)
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+R.Square <- SSR/SST
+```
+
+Now, let's print the variance table that contains SSE, SSR, SST and the R-square.
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+Variance.Table <-cbind(SSE, SSR, SST, R.Square)
+Variance.Table
+```
+
+Luckily, we don't have to do this manually, as we can request that `R` print out the ANOVA (Analysis of Variance) table containing this output. You will see that SSE and SSR will be in the `anova(fit)` output, but SST is not. However, we can simply calculate SST by summing SSE and SSR.
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+anova(fit) 
+SST <- 4181333 + 199667
+SST
+```
+
+One thing we may want to do is check whether there is a problem with heteroskedasticity. To do this, we can create a standardized residual-by-predicted plot and see if the variance of residuals is different for different values of y-hats (`predvals`).
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+plot(simpleregdata$predvals, simpleregdata$stdres)
+```
+
+
+
+## Multiple Regression with Continuous and Categorical Predictors
+
+For multiple regression, we will be using the data set `multregdata` that contains 1720 observations corresponding to the 1720 residential block groups in the year 2000 in the City of Philadelphia. The data set contains several variables obtained from the US Census, including median house value (`MEDHVAL`), median household income (`MEDHHINC`), number of people living in poverty (`NBELPOV100`), percent of individuals with at least a bachelor's degree (`PCTBACHMOR`), percent of housing units that are detached (`PCTSINGLE`), and percent of housing units that are vacant (`PCTVACANT`). In addition, I created a variable called `Police.Unit`, which is essentially a random assignment of each block group to a community policing unit. This is explained in more detail in the slides. Below, we import the data and look at the first few rows.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+setwd("C:\\Users\\eugeneby\\Dropbox\\Documents\\Work and School\\Teaching\\CPLN 671 - Statistics and Data Mining\\2023_MUSA_5000_GitHub\\Data\\Lecture 6 - R")
+multregdata <- read.csv("RegressionData.csv")
+head(multregdata)
+```
+
+The first thing we want to do is to prepare our data for regression analysis. We may want to include the variable `Police.Unit` as a predictor. However, because it is a categorical variable, with values of A, B, C and D, we cannot enter it into the regression directly. Instead, as discussed in the slides, we want to create 4 binary (i.e., dummy) variables, and include 3 of them in the regression. The process for this is described at the link below: 
+https://subscription.packtpub.com/book/big_data_and_business_intelligence/9781783989065/1/ch01lvl1sec21/creating-dummies-for-categorical-variables.
+Let's create the dummies!
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+multregdata$Police.A <- ifelse(multregdata$Police.Unit == 'A', 1, 0)
+multregdata$Police.B <- ifelse(multregdata$Police.Unit == 'B', 1, 0)
+multregdata$Police.C <- ifelse(multregdata$Police.Unit == 'C', 1, 0)
+multregdata$Police.D <- ifelse(multregdata$Police.Unit == 'D', 1, 0)
+head(multregdata)
+```
+
+From the output above, we can see that there are now 4 new variables in the data frame `multregdata`. They are `Police.A`, which takes on the value of 1 if the community policing unit in the block group is unit A, and the value of 0 otherwise; `Police.B`, which takes on the value of 1 if the community policing unit in the block group is unit B, and the value of 0 otherwise; `Police.C`, which takes on the value of 1 if the community policing unit in the block group is unit C, and the value of 0 otherwise; and `Police.D`, which takes on the value of 1 if the community policing unit in the block group is unit D, and the value of 0 otherwise. Again, we can include (at most) 3 of these in the regression, because including all 4 would result in issues with multicollinearity.
+
+And now, let's run some regressions. First, let's run a simple regression where we regress median house value on median household income. We see that median household income is a very significant predictor of median house value, and explains 42.89% of variance in median house value.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+reg1 <- lm(MEDHVAL ~ MEDHHINC, data=multregdata)
+summary(reg1)
+```
+
+Now, let's include percent of single housing units as an additional predictor. We see that it is a significant predictor, though the R-square doesn't go up by much.
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+reg2 <- lm(MEDHVAL ~ MEDHHINC + PCTSINGLES, data=multregdata)
+summary(reg2)
+```
+Now, let's include 3 police unit dummies (`Police.A`, `Police.B`, and `Police.C`). Here, `Police.D` is the reference category and is not included in the regression. We can see that block groups covered by community policing unit A have significantly higher median house value than block groups covered by community policing unit D. This difference in median house value is on average $24,314 (holding other predictors constant). Similarly, block groups covered by policing unit B have significantly higher median house value than block groups covered by community policing unit D. This difference in median house value is on average $7,604. However, the median house value isn't significantly different for block groups covered by policing units C and D (p=0.0941).
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+reg3 <- lm(MEDHVAL ~ MEDHHINC + PCTSINGLES + Police.A + Police.B + Police.C, data=multregdata)
+summary(reg3)
+```
+What if we made community policing unit C (`Police.C`) the reference category instead? We see that block groups covered by policing unit A have significantly higher median house values than those covered by policing unit C (difference of $19,267 on average). However, median house values in block groups covered by unit B aren't significantly different from those covered by unit C, and median house values in block groups covered by unit D aren't significantly different from those covered by unit C (as we also saw in the previous regression).
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+reg4 <- lm(MEDHVAL ~ MEDHHINC + PCTSINGLES + Police.A + Police.B + Police.D, data=multregdata)
+summary(reg4)
+```
+
+
+
+## Additional Multiple Regression Examples
+
+In the examples above, we went immediately to regressions, which obviously isn't the way to go. First, we need to look at distributions of variables, relationships between variables, and so on. Imagine a situation where we want to regress median household income on median house value, percentage of individuals with at least a bachelor's degree, and vacancy rate. We would first do some exploratory analyses - perhaps examine the means and standard deviations and histograms.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+summary(multregdata)
+```
+
+Now, let's look at the histograms of the variables. Here, breaks=50 tells us that we want 50 bins. We can see that none of the variables is normal - all look pretty skewed. Here, a logarithmic transformation may help normalize some of the variables, but we will skip this step here.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+hist(multregdata$MEDHHINC, breaks=50)
+hist(multregdata$MEDHVAL, breaks=50)
+hist(multregdata$PCTVACANT)
+hist(multregdata$PCTBACHMOR)
+```
+
+Now, let's plot the dependent variable (`MEDHHINC`) against the three predictors to see whether a line does a good job with summarizing their relationship. From the plots below, it seems that it doesn't.
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+plot(multregdata$MEDHVAL, multregdata$MEDHHINC)
+plot(multregdata$PCTVACANT, multregdata$MEDHHINC)
+plot(multregdata$PCTBACHMOR, multregdata$MEDHHINC)
+```
+
+Now, let's look at the correlations between predictors. Recall that one of the assumptions of regression is no severe multicollinearity, so if the predictors are strongly intercorrelated (e.g., correlation coefficient is greater than |0.8|) then we would need to drop some of the predictors. Here, no pair of the predictors has a correlation that high. Here, we will use the `cor` function, and also use the `pairs` function that shows correlations, scatter plots and histograms all at once, which avoids the need to use the `hist` and `plot` commands above.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+#Selecting the relevant variables to be in the data frame predictors
+predictors <- multregdata %>%
+  select(MEDHVAL, PCTVACANT, PCTBACHMOR)
+cor(predictors)
+
+#Setting up the function to show correlations such that higher correlations are in a larger font
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) {
+  usr <- par("usr")
+  on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- abs(cor(x, y, use = "complete.obs"))
+  txt <- format(c(r, 0.123456789), digits = digits)[1]
+  txt <- paste(prefix, txt, sep = "")
+  if (missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+  text(0.5, 0.5, txt, cex =  cex.cor * (1 + r) / 2)
+}
+
+#Setting up the function to show histograms on the main diagonal
+panel.hist <- function(x, ...) {
+  usr <- par("usr")
+  on.exit(par(usr))
+  par(usr = c(usr[1:2], 0, 1.5) )
+  h <- hist(x, plot = FALSE)
+  breaks <- h$breaks
+  nB <- length(breaks)
+  y <- h$counts
+  y <- y/max(y)
+  rect(breaks[-nB], 0, breaks[-1], y, col = "white", ...)
+}
+
+#Here we go!
+pairs(predictors,
+  upper.panel = panel.cor,
+  diag.panel  = panel.hist,
+  lower.panel = panel.smooth
+)
+
+```
+
+Below, we s run the regression, and from the output we can see that all three predictors are strongly significant.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+fit <- lm(MEDHHINC ~ MEDHVAL + PCTVACANT + PCTBACHMOR, data=multregdata)
+summary(fit)
+```
+
+Before, we looked at the correlation coefficients between predictors to assess multicollinearity. Now, let's actually calculate the Variance Inflation Factors (VIFs). Recall that if the VIF is greater than 4 then there may be an issue with multicollinearity, and if it's greater than 10, then there is severe multicollinearity. We don't have any issues with multicollinearity here.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+vif(fit)        #Variance Inflation Factor (in the package car)
+```
+
+One diagnostic of interest that is often ignored is something called partial R-squared. These are partial correlations, squared, between predictor _i_
+and the dependent variable, y, with the influence of the other variables in the regression equation eliminated. The partial correlation coefficient squared is a measure of the extent to which that part of the variation in the dependent variablewhich is not explained by the other predictors is explained by predictor _i_. Because of this definition, the order in which predictors are entered into the model will not affect the value of the partial R-squared. (Source: http://www.unesco.org/webworld/portal/idams/html/english/E2regres.htm; For more information on partial R-squared, see:
+http://biol09.biol.umontreal.ca/borcardd/partialr2.pdf). Keep in mind that partial R-squares don't have to add up to the total R-squared for the model because some of the variance in the dependent variable is explained by more than one predictor - this happens when the predictors are correlated and their
+common variance is also the variance that they share with the dependent variable. 
+
+Let's calculate the partial R-squared values for each of our predictors:
+
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+fit.glm <- glm(MEDHHINC ~ MEDHVAL + PCTVACANT + PCTBACHMOR, data=multregdata)
+summary(fit.glm)
+rsq.partial(fit.glm)
+```
+
+
+Now, let's extract predicted values, residuals and standardized residuals from the last model, and save them as variables in the data frame `multregdata`. 
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+multregdata$predvals <- fitted(fit) 
+multregdata$resids <- residuals(fit)
+multregdata$stdres <- rstandard(fit)
+```
+
+Let's look at the histogram of standardized residuals. It looks pretty normal, depsite the fact that neither the dependent variable nor the predictors are normally distributed.
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+hist(multregdata$stdres)
+```
+
+Now, let's see whether we have issues with heteroscedasticity by looking at the standardized residual-by-predicted plot. 
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+plot(multregdata$predvals, multregdata$stdres)
+```
+
+Above, we have a textbook example of heteroscedasticity: the variance of residuals is small when y-hats (predicted values) are small, and large when y-hats are large. This is certainly problematic, so let's look to see if we can identify the source of the problem by examining the scatter plots of standardized residuals by each predictor. All three predictors seem to contribute to heteroscedasticity, but visually, `MEDHVAL` is probably the most problematic.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+plot(multregdata$MEDHVAL, multregdata$stdres)
+plot(multregdata$PCTVACANT, multregdata$stdres)
+plot(multregdata$PCTBACHMOR, multregdata$stdres)
+```
+
+Taking a log-transformation of a variable is often done for variables which are skewed (or when relationships between a predictor and the dependent variable is not linear, which is true in our case). The log-transformation is achieved with the code below. Re-running the regression with the log-transformed variables is an exercise left for the student.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+multregdata$LNMEDHHINC = log(1+multregdata$MEDHHINC)
+hist(multregdata$LNMEDHHINC)
+```
+
+
+## Cross-Validation
+
+Imagine we have two models, model 1 and model 2, and we want to see which one does better on unseen data. This is where we can use cross-validation to compute the root mean squared error (RMSE) for the unseen data. 
+
+Here, in the first model, we have two predictors of `MEDHHINC`, which are `PCTVACANT` and `PCTSINGLES`. We run cross-validation with m=5 folds
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+fit1 <- lm(MEDHHINC ~ PCTVACANT + PCTSINGLES, data=multregdata)
+summary(fit1)
+#In the output: 
+#Predicted (Predicted values using all observations) 
+#cvpred (cross-validation predictions)
+#CV residual = y (in this case, MEDHHINC) - cvpred
+```
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE, results='hide', fig.show='hide'}
+cv <- CVlm(data=multregdata, fit1, m=5)				        #m=5 sets it to 5 folds
+```
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+#Extracting MSEs
+mse <- attr(cv, "ms")
+rmse <- sqrt(mse)						  #Obtaining RMSE for model 1
+rmse
+```
+
+In the second model, we have a different set of predictors, but (importantly) the same dependent variable. The RMSE is lower in the second model, so we can say that it's better at predicting unseen data than the first model. Again, we use m=5 folds here.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+fit2 <- lm(MEDHHINC ~ PCTVACANT + MEDHVAL + PCTSINGLES, data=multregdata)
+summary(fit2)
+```
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE, results='hide', fig.show='hide'}
+cv <- CVlm(data=multregdata, fit2, m=5)				        #m=5 sets it to 5 folds
+```
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+#summary(cv)
+#Extracting MSEs
+mse <- attr(cv, "ms")
+rmse <- sqrt(mse)					                      #Obtaining RMSE for model 2
+rmse
+```
+
+## Stepwise Regression
+
+We can use stepwise regression to let the algorithm "automatically" select predictors for us. The code for doing so is below. We can see that in the final model, the variable `PCTVACANT` was dropped.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE,  echo=TRUE}
+fit <- lm(MEDHVAL~ PCTBACHMOR + PCTVACANT + MEDHHINC + PCTSINGLES,data=multregdata)
+step <- stepAIC(fit, direction="both")
+step$anova
+```
+
+
+
