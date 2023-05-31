@@ -1,0 +1,119 @@
+---
+title: "Multinomial Logistic Regression in R"
+author: "Eugene Brusilovskiy"
+date: "`r Sys.Date()`"
+output: rmdformats::readthedown
+---
+
+## Data Preparation
+
+First, let's set the working directory and import the data.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:\\Users\\eugeneby\\Dropbox\\Documents\\Work and School\\Teaching\\CPLN 671 - Statistics and Data Mining\\2023_MUSA_5000_GitHub\\Data\\Lecture 17 - R")
+
+#install.packages("aod")
+#install.packages("ggplot2")
+#install.packages("rms")
+#install.packages("gmodels")
+#install.packages("nnet")
+
+library(aod)
+library(ggplot2)
+library(rms)
+library(gmodels)
+library(nnet)
+
+options(scipen=999)
+```
+
+We are going to import a (fictional) data set that contains 2000 observations and 5 variables. The first variable is `Transportation`, which is the person's most common transportation mode to work. This variable has 3 values: 1=driving, 2=public transportation, and 3=walking and will be our dependent variable in our multinomial logistic regression. Other variables are `TwoMiRadius`, which is whether the person lives within a 2 mile radius of work (1=yes, 0=no); `Income`, which is the person's weekly income, `Parent`, which is an indicator of whether the person is a parent (1=yes, 0=no), and `Gender`, which is the person's gender. In this particular example, as discussed in the slides, this variable only has two categories (1=male, 0=female and other genders).
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+mlr <-read.csv("Multinomial Logistic Regression.csv")
+head(mlr)
+```
+
+The first thing we will do is use the `factor` command to create the variable `transit` in dataset `mlr`. This is the same variable as `Transportation`, but categorical and not continuous.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+mlr$transit <- factor(mlr$Transportation)
+```
+
+Now, we will use the `relevel` command to indicate that category 3 will be the reference category here (i.e., we're comparing driving (1) and public transportation (2) to walking (3)). Our final dependent variable will be `transit.dv`.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+mlr$transit.dv <- relevel(mlr$transit, ref = 3)
+```
+
+## Running the Regression
+
+Now, we are ready to run multinomial logistic regression.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+test <- multinom(transit.dv ~ TwoMiRadius + WeeklyIncome + Gender + Parent, data = mlr)
+summary(test)
+```
+
+
+Now, we need to calculate the z-scores (Wald statistics). As usual, these are simply the Beta coefficients divided by the standard errors.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+z <- summary(test)$coefficients/summary(test)$standard.errors
+z
+```
+
+Now that the z-scores are calculated, we can obtain the (two-tailed test) p-values.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+p
+```
+
+## Rearranging the Output
+
+The way that the Beta coefficients, standard errors, z-scores and p-values are presented is very hard to read, so we combine all the results into a single matrix. Here, recall that `t()` is the command for transpose. Again, we're transposing the coefficients matrix, transposing the standard error matrix, transposing the z-score matrix, and transposing the p-value matrix. Then, we combine (merge) these transposed matrices into a single matrix with the command `cbind`.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+coeffs <- cbind(t(summary(test)$coefficients),t(summary(test)$standard.errors),t(z),t(p))
+coeffs
+```
+
+Below, regression 1 is regression comparing Y=1 (driving) to Y=3 (walking) and regression 2 is comparing Y=2 (public transportation) to Y=3 (walking). You will notice that the first column of the coeffs matrix contains the coefficients in regression 1. 
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+#First column of the coeffs matrix contains the coefficients in regression 1 (recall how we created the coeffs matrix)
+coef1 <- coeffs[,1]
+#Second column of the coeffs matrix contains the coefficients in regression 2
+coef2 <- coeffs[,2]
+#Third column of the coeffs matrix contains the standard errors in regression 1
+se1 <- coeffs[,3]
+#Fourth column of the coeffs matrix contains the standard errors in regression 2
+se2 <- coeffs[,4]
+#Fifth column of the coeffs matrix contains the z-scores in regression 1
+z.score1 <- coeffs[,5]
+#Sixth column in the coeffs matrix contains the z-scores in regression 2
+z.score2 <- coeffs[,6]
+#Seventh column in the coeffs matrix contains the p-values in regression 1
+p.value1 <- coeffs[,7]
+#Eighth column in the coeffs matrix contains the p-values in regression 2
+p.value2 <- coeffs[,8]
+```
+
+Now, we can create the odds ratio by exponentiating the coefficients
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+or1 <- exp(coef1)
+or2 <- exp(coef2)
+```
+
+Below, `reg1` is a data frame that combines the coefficients, standard errors, z scores and p-values for regression 1. Similarly, `reg2` is a data frame that combines the coefficients, standard errors, z scores and p-values for regression 2.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+reg1 <- cbind(coef1, se1, z.score1, p.value1, or1)
+reg2 <- cbind(coef2, se2, z.score2, p.value2, or2)
+```
+
+The output of the two regressions in a readable format is below. The slides provide a step-by-step interpretation of the output.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+reg1           #regression 1, comparing Y=1 (driving) to Y=3 (walking).
+reg2           #regression 2, comparing Y=2 (public transportation) to Y=3 (walking).
+```
