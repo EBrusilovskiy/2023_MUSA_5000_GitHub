@@ -1,0 +1,139 @@
+---
+title: "Exploratory Data Analysis"
+author: "Eugene Brusilovskiy"
+date: "`r Sys.Date()`"
+output: rmdformats::readthedown
+---
+
+## Introduction
+
+The aim of this Markdown is to go over a few statistical tests that examine the associations between two variables, based on the type of variables (binary, categorical, continuous, etc.) We have a data set that contains observations for 50 made up locations. The following variables are available:
+
+1. `Hospital`: Binary variable indicating whether the location has a hospital (1=yes, 0=no)
+2. `Urban`: Categorical variable indicating whether the location is urban, rural or suburban
+3. `Income`: Continous variable indicating the median income of individuals living in that location
+4. `Population`: Continous variable indicating how many people live in that location (in 1000's)
+
+First, let's specify the settings and import the data.
+
+```{r setup, include=TRUE, results='hide', warning=FALSE, message=FALSE}
+#knitr::opts_chunk$set(echo = TRUE)
+options(scipen=999)
+knitr::opts_knit$set(root.dir = "C:\\Users\\eugeneby\\Dropbox\\Documents\\Work and School\\Teaching\\CPLN 671 - Statistics and Data Mining\\2023_MUSA_5000_GitHub\\Data\\Lecture 15 - R")
+setwd("C:\\Users\\eugeneby\\Dropbox\\Documents\\Work and School\\Teaching\\CPLN 671 - Statistics and Data Mining\\2023_MUSA_5000_GitHub\\Data\\Lecture 15 - R")
+mydata <- read.csv("Exploratory Analysis.csv")
+head(mydata)
+
+#install.packages(c("gmodels", "Hmisc"))
+library(gmodels)
+library(Hmisc)
+```
+
+## Variable Distributions
+Now that we've imported the data, let's look at the number and proportion of locations with hospitals, and the number and proportion of urban, suburban and rural locations
+```{r warning=FALSE, message=FALSE, cache=FALSE, echo=TRUE}
+hosp.tab <- table(mydata$Hospital)
+hosp.tab
+prop.table(hosp.tab)
+urb.tab <-table(mydata$Urban)
+urb.tab
+prop.table(urb.tab)
+```
+
+Now, let's look at the distributions of the continuous variables. They certainly don't look like they're normally distributed.
+```{r warning=FALSE, message=FALSE, cache=FALSE, echo=TRUE}
+hist(mydata$Income)
+hist(mydata$Population)
+```
+
+
+## Association between Two Categorical Variables
+
+The Chi-Square test can be used to examine the association between two categorical variables. These could be binary variables, or they could have more than two categories. The Chi-Square distribution is the sum of squares of k independent standard normal random variables, where k is the degrees of freedom. Degrees of freedom can be calculated as (R-1)(C-1) where R is the number of rows in the cross-tabulation table and C is the number of columns in the cross-tabulation table (i.e., C = # of categories in one of the variables and R is the # of categories in the other variable).
+
+Here, let's look at the relationship between presence of hospitals in a location and the location's urbanicity. The null and alternative hypotheses are:
+
+- H0: the proportions of urban, suburban and rural locations that have hospitals are the same, vs.
+- Ha: the proportions of urban, suburban, and rural locations that have hospitals are not the same
+
+Alternatively, the following formulation of the hypotheses is also correct:
+
+- H0: the proportion of locations that have hospitals is the same in urban, suburban and rural locations, vs.
+- Ha: the proportion of locations that have hospitals is not the same in urban, suburban and rural locations
+
+Let's do a cross-tabulation of the variables `Urban` and `Hospital`. Here, we see that the p-value is 0.002931564, meaning that the presence of hospitals is significantly different for rural, suburban and urban locations. That is, we reject H0 for Ha.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE, echo=TRUE}
+CrossTable(mydata$Hospital, mydata$Urban, prop.c=TRUE, prop.r=FALSE, prop.t=FALSE, prop.chisq=FALSE, chisq=TRUE)
+```
+
+## Association between Two Continuous Variables
+
+We have talked about Pearson and Spearman correlations at length earlier in the course. Depending on the distribution of the variables, we may choose to calculate the Pearson or Spearman correlation coefficient, as done below. Recall that in correlation analysis, H0 states that there's no association between a pair of variables (correlation we observe in our sample _isn't_ significantly different from 0) and Ha states state sthat there is an association between a pair of variables (correlation we observe in our sample _is_ significantly different from 0).
+
+```{r warning=FALSE, message=FALSE, cache=FALSE, echo=TRUE}
+corrvars<-as.matrix(cbind(mydata$Income, mydata$Population))
+# One way of calculating correlations in R
+rcorr(corrvars,type="pearson")
+rcorr(corrvars,type="spearman")
+
+# Another way of calculating correlations in R
+cor(corrvars, method=c("pearson"))
+cor(corrvars, method=c("spearman"))
+```
+
+
+## Association between One Binary and One Continuous Variable
+
+When we want to look at the relationship between a binary variable and a continuous variable, we rely on a the independent samples t-test. For instance, if we wanted to see whether there was an association between presence of hospitals in a location and the median income there, we would calculate the means of the `Income` variable for locations that have a hospital and locations that don't, and compare them - that is, assess whether the difference between the two means is statistically significant, or simply due to sampling variability. First, let's look at the means and standard deviations of the `Income` variable for locations that have and don't have hospitals:
+
+
+```{r warning=FALSE, message=FALSE, cache=FALSE, echo=TRUE}
+tapply(mydata$Income, mydata$Hospital, mean)
+tapply(mydata$Income, mydata$Hospital, sd)
+```
+
+Again, in the independent samples t-test, H0 states that locations that have a hospital and locations that don't have a hospital don't differ in their average incomes, and Ha states that locations that have a hospital and locations that don't have a hospital differ in terms of their average incomes. Here, because the p-value < 0.00001, we can safely reject H0 for Ha and state that locations that have hospitals have median household income that's significantly higher than locations that don't ($65,226.80 vs. $44,060.65).
+
+```{r warning=FALSE, message=FALSE, cache=FALSE, echo=TRUE}
+t.test(mydata$Income~mydata$Hospital)
+```
+
+Keep in mind that when the sample size is small (<40 in each group), the normality of the continuous variable is very important. In our case, we have a small sample, `Income` is not normally distributed, and a non-parametric t-test would probably be more appropriate. The Mann-Whitney U Test (which has many other names, including Wilcoxon Rank Sum Test) is the non-parametric version of the independent samples t-test, and is implemented below. We can see that the p-value is still very low meaning that income is significantly different in locations that contain and don't contain hospitals.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE, echo=TRUE}
+wilcox.test(mydata$Income~mydata$Hospital)
+```
+
+
+## Association between One Categorical and One Continuous Variable
+
+When we want to examine the relationship between a continuous variable and a categorical variable that has two or more categories, we can use the one-way Analysis of Variance (ANOVA) test. Usually, ANOVA is used when the categorical variable has more than two categories, but when it has two categories, the results of the ANOVA will be identical to the results of the independent samples t-test above.
+
+The null and alternative hypotheses in the ANOVA test are as follows:
+
+- H0: The mean of the continuous variable is the same for all groups, vs.
+- Ha: The mean of the continuous variable is not the same for all groups (i.e., means in at least 2 groups are different).
+
+Here, let's see if income is different by urbanicity.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE, echo=TRUE}
+#tapply(mydata$Income, mydata$Urban, mean)
+#tapply(mydata$Income, mydata$Urban, sd)
+aggregate(Income~Urban, data=mydata, FUN=mean)
+anova <- aov(mydata$Income~mydata$Urban)
+summary(anova)
+```
+
+If we have significant results (p<0.05), we still don't know which groups are different from one another in terms of income. Tukey post hoc test helps us figure this out - it does pairwise comparisons of all groups. Below, we see that urban and rural locations differ in terms of income, as do urban and suburban locations. However, suburban and rural locations do not differ in terms of income. Keep in mind that Tukey test is one of many available post hoc tests. Others, like the Bonferroni test, can correct for multiple testing.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE, echo=TRUE}
+TukeyHSD(anova)
+```
+
+As with independent samples t-tests, normality of the continuous variable is important when the sample size is small (<40 in each group). A nonparametric test called the Kruskal-Wallis test is available when the continuous variable isn't normal. Here, the p-value is 0.002713, meaning that the nonparametric test is consistent with the results of the earlier (parametric) test.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE, echo=TRUE}
+kruskal.test(mydata$Income~mydata$Urban)
+```
+As with the parametric ANOVA, post hoc tests exist for the Kruskal-Wallis test. One of the most commonly used post hoc tests is the Dunn test, and its implementation in R is left as an exercise for the student.
