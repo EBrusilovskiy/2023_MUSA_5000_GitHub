@@ -1,0 +1,112 @@
+---
+title: "DBSCAN Clustering"
+author: "Eugene Brusilovskiy and ChatGPT"
+date: "`r Sys.Date()`"
+output: rmdformats::readthedown
+---
+
+Certainly! Here's an example of an R Markdown document that demonstrates how to use DBSCAN to cluster the wines in the provided dataset. This data set is described in more detail in the K-Means Clustering Markdown.
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Preparing the Wine Data Set
+
+In this example, we will use the DBSCAN algorithm to cluster the wines in the [Wine Dataset](https://archive.ics.uci.edu/ml/datasets/wine). Let's start by loading the necessary libraries and the dataset.
+
+```{r load-libraries-and-data, echo=TRUE, warning=FALSE, message=FALSE}
+library(dbscan)
+library(ggplot2)
+
+# Load the Wine dataset
+url <- "https://archive.ics.uci.edu/ml/machine-learning-databases/wine/wine.data"
+wine_data <- read.csv(url, header = FALSE)
+colnames(wine_data) <- c("Class", "Alcohol", "MalicAcid", "Ash", "Alcalinity", "Magnesium", "Phenols", "Flavanoids",
+                         "NonflavanoidPhenols", "Proanthocyanins", "ColorIntensity", "Hue", "OD280_OD315", "Proline")
+
+head(wine_data)
+```
+
+The Wine dataset contains 13 variables, including the class labels. For this clustering example, we will exclude the class labels since DBSCAN is an unsupervised algorithm. Now, let's preprocess the data by standardizing the variables.
+
+```{r data-preprocessing, echo=TRUE, warning=FALSE, message=FALSE}
+# Exclude the Class variable
+wine_data_processed <- wine_data[, -1]
+
+# Standardize the variables
+wine_data_standardized <- scale(wine_data_processed)
+
+head(wine_data_standardized)
+```
+
+The variables in the dataset are now standardized with a mean of 0 and a standard deviation of 1. 
+
+## Parameter Tuning
+
+Next, we can try to identify the optimal parameters values for `eps` and `MinPts`. There are a number of ways to identify the optimal values for these parameters. Some literature suggests that `MinPts` should be at least 1 more than the number of variables subjected to the cluster analysis, which is 13 here. Other sources recommend that it should be more than 2*number of variables. Here, let's set `MinPts` to 14 (13+1). For `eps`, we can use the `kNNdistplot` function to identify the value on the y-axis that corresponds to the knee. In the code, we set k to `MinPts` (here, k=14). The knee in the plot below corresponds to an `eps` value of approximately 4.
+
+
+```{r}
+kNNdistplot(wine_data_standardized, k=14)
+```
+
+Now that we've set `MinPts` to 14 and `eps` to 4, we can run the DBSCAN analysis with these parameter values. 
+
+```{r dbscan-clustering1, echo=TRUE, warning=FALSE, message=FALSE}
+# Perform DBSCAN clustering
+dbscan_result <- dbscan(wine_data_standardized, eps = 4, MinPts = 14)
+# Extract the cluster assignments and noise points
+clusters <- dbscan_result$cluster
+noise <- dbscan_result$cluster == 0
+
+# Print the number of clusters and noise points
+cat("Number of clusters:", max(clusters), "\n")
+cat("Number of noise points:", sum(noise), "\n")
+```
+We can see that there's only 1 cluster (i.e., all observations except 2 fall into one cluster). Two observations are considered noise points. Clearly putting all observations into a single cluster is not helpful, and may suggest that we need to play around with parameter values. Let's actually set `MinPts` to 30 and see what the optimal value of `eps` 30 corresponds to (about 3.75).
+
+
+```{r}
+kNNdistplot(wine_data_standardized, k=30)
+```
+Now, let's re-run the DBSCAN analyses with new parameter values. Again, we see that we only have 1 cluster with 7 noise points, which is not a useful solution either.
+
+```{r dbscan-clustering2, echo=TRUE, warning=FALSE, message=FALSE}
+# Perform DBSCAN clustering
+dbscan_result <- dbscan(wine_data_standardized, eps = 3.75, MinPts = 30)
+# Extract the cluster assignments and noise points
+clusters <- dbscan_result$cluster
+noise <- dbscan_result$cluster == 0
+
+# Print the number of clusters and noise points
+cat("Number of clusters:", max(clusters), "\n")
+cat("Number of noise points:", sum(noise), "\n")
+```
+
+Let's play around with some more values of `MinPts` and `eps`, and set them to 4 and 2.15, respectively. In this case, we see that there are 3 clusters with 53 noise points. This solution is certainly not consistent with recommendations from the literature, but let's see if the solution makes sense.
+
+```{r dbscan-clustering3, echo=TRUE, warning=FALSE, message=FALSE}
+# Perform DBSCAN clustering
+dbscan_result <- dbscan(wine_data_standardized, eps = 2.15, MinPts = 4)
+# Extract the cluster assignments and noise points
+clusters <- dbscan_result$cluster
+noise <- dbscan_result$cluster == 0
+
+# Print the number of clusters and noise points
+cat("Number of clusters:", max(clusters), "\n")
+cat("Number of noise points:", sum(noise), "\n")
+```
+
+## Evaluation of Results
+
+Let's examine the average value of the variables in each cluster, and cross-tabulate the DBSCAN cluster and the wine type (variable `Class`) to see how well the clustering alggorithm performs with these parameters. Here, we see that the cross-tabulation shows that there is very little concordance between actual wine type and the DBSCAN cluster, which was not the case when we ran k-means clustering. This means that DBSCAN clustering with the parameters we chose leaves much to be desired. However, additional parameter tuning may yield a better solution. This is left as an exercise for the student. See https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4897525/ for more information and other ways of identifying the parameter values (silhouette index, etc.)
+
+```{r visualize-clustering, echo=TRUE, warning=FALSE, message=FALSE}
+# Add the cluster information to the dataset
+round(aggregate(wine_data, by=list(cluster=clusters), mean),1)
+wine_data_final <- cbind(wine_data, cluster=clusters)
+table(wine_data_final$Class, wine_data_final$cluster)
+
+```
+
