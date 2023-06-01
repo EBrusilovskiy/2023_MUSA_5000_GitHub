@@ -1,0 +1,108 @@
+---
+title: "Working with Census Data"
+author: "Eugene Brusilovskiy"
+date: "`r Sys.Date()`"
+output: rmdformats::readthedown
+---
+
+First, let's set a few options (including working directory on the computer) and install the necessary R packages. 
+```{r setup, include=TRUE, results='hide'}
+#knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:\\Users\\eugeneby\\Dropbox\\Documents\\Work and School\\Teaching\\CPLN 671 - Statistics and Data Mining\\2023_MUSA_5000_GitHub\\Data\\Lecture 10 - TidyCensus")
+
+options(scipen=999)
+
+readRenviron("~/.Renviron")
+options(tigris_use_cache = TRUE)
+options(tigris_class="sf")
+```
+
+```{r warning=FALSE, message=FALSE, cache=FALSE, echo=TRUE}
+#install.packages(c("tidycensus", "tidyverse", "sp", "maptools", "sf", "rgdal", "tigris", "ggplot2", "readxl", "tmap", "tmaptools", "tibble", "httr", "curl"))
+
+library(tidycensus)
+library(tidyverse)
+library(sp)
+library(maptools)
+library(sf)
+library(rgdal)
+library(tigris)
+library(ggplot2)
+library(readxl)
+library(tmap)
+library(tmaptools)
+library(tibble)
+library(httr)
+library(curl)
+```
+
+After installing the packages, we need to go to https://api.census.gov/data/key_signup.html to request a Census API key. It's pretty easy to get it, and once you do, you can put it in the code below
+
+```{r warning=FALSE, message=FALSE, cache=FALSE, eval=FALSE}
+census_api_key("PUT YOUR API KEY IN HERE", overwrite=TRUE)
+```
+
+```{r warning=FALSE, message=FALSE, cache=FALSE, echo=FALSE}
+census_api_key("e82cfb560240b2716c3b4309fc6560018a7ca462", overwrite=TRUE)
+```
+
+
+Now, let's try to extract a bunch of variables at the block group level for a few counties (Philadelphia & Montgomery in PA; Mercer in NJ). Let's say we want these variables from the 2015 American Community Survey (ACS).
+
+First, let's figure out what variables are available for that year. The command below gives a list of all variables that are available in the 2015 ACS survey.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+VariableNames <-load_variables(2015, "acs5", cache=TRUE)
+View(VariableNames)
+```
+
+Note that some of the variables may NOT be available for the block group geography; they're only available for larger geographies such as tracts. Let's select a few variables of interest and create a vector `vars` with the names of these variables. Note that for each numberic variable, the suffix 'E' stands for estimate and the suffix 'M' stands for margin of error. Both are available, but for our intents and purposes, we only deal with estimates.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+vars = c("B00001_001", "B00002_001", "B00001_001", "B00002_001",
+    "B02001_002", "B02001_003", "B19013_001", "B25001_001", "B25002_001", 
+    "B25002_002", "B25002_003", "B25003_001", "B25003_002", "B25003_003", 
+    "B25058_001", "B25064_001", "B25077_001")
+```
+
+Now, we are ready to get the block group-level data for each of the three counties.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+Philadelphia <- data.frame(tidycensus::get_acs(geography="block group", variables = vars, state="PA", county="Philadelphia", geometry=TRUE, year=2015, output="wide"))
+Montgomery <- data.frame(tidycensus::get_acs(geography="block group", variables = vars, state="PA", county="Montgomery", geometry=TRUE, year=2015, output="wide"))
+Mercer <- data.frame(tidycensus::get_acs(geography="block group", variables = vars, state="NJ", county="Mercer", geometry=TRUE, year=2015, output="wide"))
+```
+
+Now, let's get block group boundary files for Philadelphia, Montgomery and Mercer Counties.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+Philadelphia_BG <- tigris::block_groups(state="PA", county="Philadelphia", class="sf", year=2015)
+Montgomery_BG <- tigris::block_groups(state="PA", county="Montgomery", class="sf", year=2015)
+Mercer_BG <- tigris::block_groups(state="NJ", county="Mercer", class="sf", year=2015)
+```
+
+For each county, let's join the data tables to the boundary files by GEOID, which is a variable found in both the data tables and boundary tables - it's like doing a _Join by attribute_ in ArcGIS.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+Philadelphia_geojoin <-tigris::geo_join(Philadelphia_BG, Philadelphia, by="GEOID", how="inner")
+Montgomery_geojoin <-tigris::geo_join(Montgomery_BG, Montgomery, by="GEOID", how="inner")
+Mercer_geojoin <-tigris::geo_join(Mercer_BG, Mercer, by="GEOID", how="inner")
+```
+
+Now, let's create a single shapefile containing the 2015 ACS variables we extracted for all block groups in Philadelphia, Montgomery and Mercer counties. Then, let's see what kind of R object CensusData is.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+CensusData <- rbind(Philadelphia_geojoin, Montgomery_geojoin, Mercer_geojoin)
+class(CensusData)
+```
+
+
+Finally, let's calculate a few new variables from existing ones. Here, `pct_white` is number of people who are white divided by total number of people in block group; `pct_black` is number of people who are black divided by total number of people in block group; and `pct_vacant` is number of vacant housing units divided by total housing units in block group
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+CensusData$pct_white <- CensusData$B02001_002E/CensusData$B00001_001E
+CensusData$pct_black <- CensusData$B02001_003E/CensusData$B00001_001E
+CensusData$pct_vacant <- CensusData$B25002_003E/CensusData$B25002_001E
+```
+
+Looking at the variables in the data frame `CensusData`, we see that these three new variables appear as well.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+head(CensusData)
+```

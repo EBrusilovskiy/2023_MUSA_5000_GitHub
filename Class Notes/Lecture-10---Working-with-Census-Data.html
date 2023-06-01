@@ -9,7 +9,7 @@
     
         <meta name="date" content="2023-05-31" />
     
-    <title>Multinomial Logistic Regression in R</title>
+    <title>Working with Census Data</title>
 
         <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1265,18 +1265,13 @@ margin-left: 0 !important;
          
    
         
-      <h1 class="title">Multinomial Logistic Regression in R</h1>
+      <h1 class="title">Working with Census Data</h1>
       
          <!-- readthedown authors -->
    <div id="sidebar">
-    <h2><a href="#content">Multinomial Logistic Regression in R</a></h2>
+    <h2><a href="#content">Working with Census Data</a></h2>
     <div id="toc">
-      <ul>
-      <li><a href="#data-preparation" id="toc-data-preparation">Data
-      Preparation</a></li>
-      <li><a href="#running-the-regression" id="toc-running-the-regression">Running the Regression</a></li>
-      <li><a href="#rearranging-the-output" id="toc-rearranging-the-output">Rearranging the Output</a></li>
-      </ul>
+      
     </div>
     <div id="postamble" data-toggle="wy-nav-shift" class="status">
                   <p class="author"><span class="glyphicon glyphicon-user"></span> Eugene
@@ -1291,184 +1286,169 @@ Brusilovskiy</p>
    
 <!-- Don't indent these lines or it will mess pre blocks indentation --> 
 <div id="main">
-<div id="data-preparation" class="section level2">
-<h2>Data Preparation</h2>
-<p>First, let’s set the working directory and import the data.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_chunk<span class="sc">$</span><span class="fu">set</span>(<span class="at">echo =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_knit<span class="sc">$</span><span class="fu">set</span>(<span class="at">root.dir =</span> <span class="st">&quot;C:</span><span class="sc">\\</span><span class="st">Users</span><span class="sc">\\</span><span class="st">eugeneby</span><span class="sc">\\</span><span class="st">Dropbox</span><span class="sc">\\</span><span class="st">Documents</span><span class="sc">\\</span><span class="st">Work and School</span><span class="sc">\\</span><span class="st">Teaching</span><span class="sc">\\</span><span class="st">CPLN 671 - Statistics and Data Mining</span><span class="sc">\\</span><span class="st">2023_MUSA_5000_GitHub</span><span class="sc">\\</span><span class="st">Data</span><span class="sc">\\</span><span class="st">Lecture 17 - R&quot;</span>)</span>
+<p>First, let’s set a few options (including working directory on the
+computer) and install the necessary R packages.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#knitr::opts_chunk$set(echo = TRUE)</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span>opts_knit<span class="sc">$</span><span class="fu">set</span>(<span class="at">root.dir =</span> <span class="st">&quot;C:</span><span class="sc">\\</span><span class="st">Users</span><span class="sc">\\</span><span class="st">eugeneby</span><span class="sc">\\</span><span class="st">Dropbox</span><span class="sc">\\</span><span class="st">Documents</span><span class="sc">\\</span><span class="st">Work and School</span><span class="sc">\\</span><span class="st">Teaching</span><span class="sc">\\</span><span class="st">CPLN 671 - Statistics and Data Mining</span><span class="sc">\\</span><span class="st">2023_MUSA_5000_GitHub</span><span class="sc">\\</span><span class="st">Data</span><span class="sc">\\</span><span class="st">Lecture 10 - TidyCensus&quot;</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">#install.packages(&quot;aod&quot;)</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">#install.packages(&quot;ggplot2&quot;)</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">#install.packages(&quot;rms&quot;)</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">#install.packages(&quot;gmodels&quot;)</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">#install.packages(&quot;nnet&quot;)</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(aod)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rms)</span></code></pre></div>
-<pre><code>## Loading required package: Hmisc</code></pre>
-<pre><code>## 
-## Attaching package: &#39;Hmisc&#39;</code></pre>
-<pre><code>## The following objects are masked from &#39;package:base&#39;:
-## 
-##     format.pval, units</code></pre>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gmodels)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(nnet)</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">scipen=</span><span class="dv">999</span>)</span></code></pre></div>
-<p>We are going to import a (fictional) data set that contains 2000
-observations and 5 variables. The first variable is
-<code>Transportation</code>, which is the person’s most common
-transportation mode to work. This variable has 3 values: 1=driving,
-2=public transportation, and 3=walking and will be our dependent
-variable in our multinomial logistic regression. Other variables are
-<code>TwoMiRadius</code>, which is whether the person lives within a 2
-mile radius of work (1=yes, 0=no); <code>Income</code>, which is the
-person’s weekly income, <code>Parent</code>, which is an indicator of
-whether the person is a parent (1=yes, 0=no), and <code>Gender</code>,
-which is the person’s gender. In this particular example, as discussed
-in the slides, this variable only has two categories (1=male, 0=female
-and other genders).</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>mlr <span class="ot">&lt;-</span><span class="fu">read.csv</span>(<span class="st">&quot;Multinomial Logistic Regression.csv&quot;</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(mlr)</span></code></pre></div>
-<pre><code>##   Transportation TwoMiRadius WeeklyIncome Gender Parent
-## 1              1           0     888.3846      1      0
-## 2              1           0     611.3381      0      0
-## 3              1           0     667.4584      0      1
-## 4              1           0     914.3464      1      1
-## 5              1           0     934.0372      1      0
-## 6              1           0     831.4727      1      0</code></pre>
-<p>The first thing we will do is use the <code>factor</code> command to
-create the variable <code>transit</code> in dataset <code>mlr</code>.
-This is the same variable as <code>Transportation</code>, but
-categorical and not continuous.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>mlr<span class="sc">$</span>transit <span class="ot">&lt;-</span> <span class="fu">factor</span>(mlr<span class="sc">$</span>Transportation)</span></code></pre></div>
-<p>Now, we will use the <code>relevel</code> command to indicate that
-category 3 will be the reference category here (i.e., we’re comparing
-driving (1) and public transportation (2) to walking (3)). Our final
-dependent variable will be <code>transit.dv</code>.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>mlr<span class="sc">$</span>transit.dv <span class="ot">&lt;-</span> <span class="fu">relevel</span>(mlr<span class="sc">$</span>transit, <span class="at">ref =</span> <span class="dv">3</span>)</span></code></pre></div>
-</div>
-<div id="running-the-regression" class="section level2">
-<h2>Running the Regression</h2>
-<p>Now, we are ready to run multinomial logistic regression.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>test <span class="ot">&lt;-</span> <span class="fu">multinom</span>(transit.dv <span class="sc">~</span> TwoMiRadius <span class="sc">+</span> WeeklyIncome <span class="sc">+</span> Gender <span class="sc">+</span> Parent, <span class="at">data =</span> mlr)</span></code></pre></div>
-<pre><code>## # weights:  18 (10 variable)
-## initial  value 2197.224577 
-## iter  10 value 1932.497582
-## final  value 1930.003860 
-## converged</code></pre>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(test)</span></code></pre></div>
-<pre><code>## Call:
-## multinom(formula = transit.dv ~ TwoMiRadius + WeeklyIncome + 
-##     Gender + Parent, data = mlr)
-## 
-## Coefficients:
-##   (Intercept) TwoMiRadius WeeklyIncome      Gender      Parent
-## 1   0.5192685  -2.1922044 0.0004478115 -0.08072469 0.007994219
-## 2  -0.2749999  -0.7958729 0.0002008068 -0.09769881 0.048877458
-## 
-## Std. Errors:
-##   (Intercept) TwoMiRadius WeeklyIncome    Gender    Parent
-## 1   0.3188672   0.1187860 0.0004002930 0.1132613 0.1132672
-## 2   0.3348564   0.1215765 0.0004167938 0.1185391 0.1185441
-## 
-## Residual Deviance: 3860.008 
-## AIC: 3880.008</code></pre>
-<p>Now, we need to calculate the z-scores (Wald statistics). As usual,
-these are simply the Beta coefficients divided by the standard
-errors.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">summary</span>(test)<span class="sc">$</span>coefficients<span class="sc">/</span><span class="fu">summary</span>(test)<span class="sc">$</span>standard.errors</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>z</span></code></pre></div>
-<pre><code>##   (Intercept) TwoMiRadius WeeklyIncome     Gender     Parent
-## 1   1.6284788  -18.455069    1.1187092 -0.7127295 0.07057842
-## 2  -0.8212471   -6.546275    0.4817893 -0.8241907 0.41231466</code></pre>
-<p>Now that the z-scores are calculated, we can obtain the (two-tailed
-test) p-values.</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">pnorm</span>(<span class="fu">abs</span>(z), <span class="dv">0</span>, <span class="dv">1</span>)) <span class="sc">*</span> <span class="dv">2</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>p</span></code></pre></div>
-<pre><code>##   (Intercept)         TwoMiRadius WeeklyIncome    Gender    Parent
-## 1   0.1034234 0.00000000000000000    0.2632642 0.4760131 0.9437333
-## 2   0.4115055 0.00000000005898992    0.6299557 0.4098312 0.6801088</code></pre>
-</div>
-<div id="rearranging-the-output" class="section level2">
-<h2>Rearranging the Output</h2>
-<p>The way that the Beta coefficients, standard errors, z-scores and
-p-values are presented is very hard to read, so we combine all the
-results into a single matrix. Here, recall that <code>t()</code> is the
-command for transpose. Again, we’re transposing the coefficients matrix,
-transposing the standard error matrix, transposing the z-score matrix,
-and transposing the p-value matrix. Then, we combine (merge) these
-transposed matrices into a single matrix with the command
-<code>cbind</code>.</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>coeffs <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="fu">t</span>(<span class="fu">summary</span>(test)<span class="sc">$</span>coefficients),<span class="fu">t</span>(<span class="fu">summary</span>(test)<span class="sc">$</span>standard.errors),<span class="fu">t</span>(z),<span class="fu">t</span>(p))</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>coeffs</span></code></pre></div>
-<pre><code>##                          1             2           1            2            1
-## (Intercept)   0.5192685208 -0.2749998608 0.318867235 0.3348564107   1.62847876
-## TwoMiRadius  -2.1922044268 -0.7958729205 0.118786035 0.1215764534 -18.45506868
-## WeeklyIncome  0.0004478115  0.0002008068 0.000400293 0.0004167938   1.11870925
-## Gender       -0.0807246918 -0.0976988129 0.113261327 0.1185390844  -0.71272953
-## Parent        0.0079942185  0.0488774575 0.113267186 0.1185440688   0.07057842
-##                       2         1                   2
-## (Intercept)  -0.8212471 0.1034234 0.41150552530647877
-## TwoMiRadius  -6.5462752 0.0000000 0.00000000005898992
-## WeeklyIncome  0.4817893 0.2632642 0.62995565947713228
-## Gender       -0.8241907 0.4760131 0.40983120123819239
-## Parent        0.4123147 0.9437333 0.68010880433214993</code></pre>
-<p>Below, regression 1 is regression comparing Y=1 (driving) to Y=3
-(walking) and regression 2 is comparing Y=2 (public transportation) to
-Y=3 (walking). You will notice that the first column of the coeffs
-matrix contains the coefficients in regression 1.</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co">#First column of the coeffs matrix contains the coefficients in regression 1 (recall how we created the coeffs matrix)</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>coef1 <span class="ot">&lt;-</span> coeffs[,<span class="dv">1</span>]</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="co">#Second column of the coeffs matrix contains the coefficients in regression 2</span></span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>coef2 <span class="ot">&lt;-</span> coeffs[,<span class="dv">2</span>]</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="co">#Third column of the coeffs matrix contains the standard errors in regression 1</span></span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>se1 <span class="ot">&lt;-</span> coeffs[,<span class="dv">3</span>]</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="co">#Fourth column of the coeffs matrix contains the standard errors in regression 2</span></span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>se2 <span class="ot">&lt;-</span> coeffs[,<span class="dv">4</span>]</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="co">#Fifth column of the coeffs matrix contains the z-scores in regression 1</span></span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>z.score1 <span class="ot">&lt;-</span> coeffs[,<span class="dv">5</span>]</span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="co">#Sixth column in the coeffs matrix contains the z-scores in regression 2</span></span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>z.score2 <span class="ot">&lt;-</span> coeffs[,<span class="dv">6</span>]</span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="co">#Seventh column in the coeffs matrix contains the p-values in regression 1</span></span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>p.value1 <span class="ot">&lt;-</span> coeffs[,<span class="dv">7</span>]</span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a><span class="co">#Eighth column in the coeffs matrix contains the p-values in regression 2</span></span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>p.value2 <span class="ot">&lt;-</span> coeffs[,<span class="dv">8</span>]</span></code></pre></div>
-<p>Now, we can create the odds ratio by exponentiating the
-coefficients</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>or1 <span class="ot">&lt;-</span> <span class="fu">exp</span>(coef1)</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>or2 <span class="ot">&lt;-</span> <span class="fu">exp</span>(coef2)</span></code></pre></div>
-<p>Below, <code>reg1</code> is a data frame that combines the
-coefficients, standard errors, z scores and p-values for regression 1.
-Similarly, <code>reg2</code> is a data frame that combines the
-coefficients, standard errors, z scores and p-values for regression
-2.</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>reg1 <span class="ot">&lt;-</span> <span class="fu">cbind</span>(coef1, se1, z.score1, p.value1, or1)</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>reg2 <span class="ot">&lt;-</span> <span class="fu">cbind</span>(coef2, se2, z.score2, p.value2, or2)</span></code></pre></div>
-<p>The output of the two regressions in a readable format is below. The
-slides provide a step-by-step interpretation of the output.</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>reg1           <span class="co">#regression 1, comparing Y=1 (driving) to Y=3 (walking).</span></span></code></pre></div>
-<pre><code>##                      coef1         se1     z.score1  p.value1       or1
-## (Intercept)   0.5192685208 0.318867235   1.62847876 0.1034234 1.6807977
-## TwoMiRadius  -2.1922044268 0.118786035 -18.45506868 0.0000000 0.1116703
-## WeeklyIncome  0.0004478115 0.000400293   1.11870925 0.2632642 1.0004479
-## Gender       -0.0807246918 0.113261327  -0.71272953 0.4760131 0.9224476
-## Parent        0.0079942185 0.113267186   0.07057842 0.9437333 1.0080263</code></pre>
-<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>reg2           <span class="co">#regression 2, comparing Y=2 (public transportation) to Y=3 (walking).</span></span></code></pre></div>
-<pre><code>##                      coef2          se2   z.score2            p.value2
-## (Intercept)  -0.2749998608 0.3348564107 -0.8212471 0.41150552530647877
-## TwoMiRadius  -0.7958729205 0.1215764534 -6.5462752 0.00000000005898992
-## WeeklyIncome  0.0002008068 0.0004167938  0.4817893 0.62995565947713228
-## Gender       -0.0976988129 0.1185390844 -0.8241907 0.40983120123819239
-## Parent        0.0488774575 0.1185440688  0.4123147 0.68010880433214993
-##                    or2
-## (Intercept)  0.7595722
-## TwoMiRadius  0.4511872
-## WeeklyIncome 1.0002008
-## Gender       0.9069220
-## Parent       1.0500917</code></pre>
-</div>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">scipen=</span><span class="dv">999</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">readRenviron</span>(<span class="st">&quot;~/.Renviron&quot;</span>)</span></code></pre></div>
+<pre><code>## Warning in readRenviron(&quot;~/.Renviron&quot;): file
+## &#39;C:/Users/eugeneby/Documents/.Renviron&#39; cannot be opened for reading</code></pre>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">tigris_use_cache =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">tigris_class=</span><span class="st">&quot;sf&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#install.packages(c(&quot;tidycensus&quot;, &quot;tidyverse&quot;, &quot;sp&quot;, &quot;maptools&quot;, &quot;sf&quot;, &quot;rgdal&quot;, &quot;tigris&quot;, &quot;ggplot2&quot;, &quot;readxl&quot;, &quot;tmap&quot;, &quot;tmaptools&quot;, &quot;tibble&quot;, &quot;httr&quot;, &quot;curl&quot;))</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidycensus)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sp)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(maptools)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rgdal)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tigris)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readxl)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tmap)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tmaptools)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tibble)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(httr)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(curl)</span></code></pre></div>
+<p>After installing the packages, we need to go to <a href="https://api.census.gov/data/key_signup.html" class="uri">https://api.census.gov/data/key_signup.html</a> to request a
+Census API key. It’s pretty easy to get it, and once you do, you can put
+it in the code below</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">census_api_key</span>(<span class="st">&quot;PUT YOUR API KEY IN HERE&quot;</span>, <span class="at">overwrite=</span><span class="cn">TRUE</span>)</span></code></pre></div>
+<p>Now, let’s try to extract a bunch of variables at the block group
+level for a few counties (Philadelphia &amp; Montgomery in PA; Mercer in
+NJ). Let’s say we want these variables from the 2015 American Community
+Survey (ACS).</p>
+<p>First, let’s figure out what variables are available for that year.
+The command below gives a list of all variables that are available in
+the 2015 ACS survey.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>VariableNames <span class="ot">&lt;-</span><span class="fu">load_variables</span>(<span class="dv">2015</span>, <span class="st">&quot;acs5&quot;</span>, <span class="at">cache=</span><span class="cn">TRUE</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">View</span>(VariableNames)</span></code></pre></div>
+<p>Note that some of the variables may NOT be available for the block
+group geography; they’re only available for larger geographies such as
+tracts. Let’s select a few variables of interest and create a vector
+<code>vars</code> with the names of these variables. Note that for each
+numberic variable, the suffix ‘E’ stands for estimate and the suffix ‘M’
+stands for margin of error. Both are available, but for our intents and
+purposes, we only deal with estimates.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>vars <span class="ot">=</span> <span class="fu">c</span>(<span class="st">&quot;B00001_001&quot;</span>, <span class="st">&quot;B00002_001&quot;</span>, <span class="st">&quot;B00001_001&quot;</span>, <span class="st">&quot;B00002_001&quot;</span>,</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;B02001_002&quot;</span>, <span class="st">&quot;B02001_003&quot;</span>, <span class="st">&quot;B19013_001&quot;</span>, <span class="st">&quot;B25001_001&quot;</span>, <span class="st">&quot;B25002_001&quot;</span>, </span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;B25002_002&quot;</span>, <span class="st">&quot;B25002_003&quot;</span>, <span class="st">&quot;B25003_001&quot;</span>, <span class="st">&quot;B25003_002&quot;</span>, <span class="st">&quot;B25003_003&quot;</span>, </span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;B25058_001&quot;</span>, <span class="st">&quot;B25064_001&quot;</span>, <span class="st">&quot;B25077_001&quot;</span>)</span></code></pre></div>
+<p>Now, we are ready to get the block group-level data for each of the
+three counties.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>Philadelphia <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(tidycensus<span class="sc">::</span><span class="fu">get_acs</span>(<span class="at">geography=</span><span class="st">&quot;block group&quot;</span>, <span class="at">variables =</span> vars, <span class="at">state=</span><span class="st">&quot;PA&quot;</span>, <span class="at">county=</span><span class="st">&quot;Philadelphia&quot;</span>, <span class="at">geometry=</span><span class="cn">TRUE</span>, <span class="at">year=</span><span class="dv">2015</span>, <span class="at">output=</span><span class="st">&quot;wide&quot;</span>))</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>Montgomery <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(tidycensus<span class="sc">::</span><span class="fu">get_acs</span>(<span class="at">geography=</span><span class="st">&quot;block group&quot;</span>, <span class="at">variables =</span> vars, <span class="at">state=</span><span class="st">&quot;PA&quot;</span>, <span class="at">county=</span><span class="st">&quot;Montgomery&quot;</span>, <span class="at">geometry=</span><span class="cn">TRUE</span>, <span class="at">year=</span><span class="dv">2015</span>, <span class="at">output=</span><span class="st">&quot;wide&quot;</span>))</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>Mercer <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(tidycensus<span class="sc">::</span><span class="fu">get_acs</span>(<span class="at">geography=</span><span class="st">&quot;block group&quot;</span>, <span class="at">variables =</span> vars, <span class="at">state=</span><span class="st">&quot;NJ&quot;</span>, <span class="at">county=</span><span class="st">&quot;Mercer&quot;</span>, <span class="at">geometry=</span><span class="cn">TRUE</span>, <span class="at">year=</span><span class="dv">2015</span>, <span class="at">output=</span><span class="st">&quot;wide&quot;</span>))</span></code></pre></div>
+<p>Now, let’s get block group boundary files for Philadelphia,
+Montgomery and Mercer Counties.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>Philadelphia_BG <span class="ot">&lt;-</span> tigris<span class="sc">::</span><span class="fu">block_groups</span>(<span class="at">state=</span><span class="st">&quot;PA&quot;</span>, <span class="at">county=</span><span class="st">&quot;Philadelphia&quot;</span>, <span class="at">class=</span><span class="st">&quot;sf&quot;</span>, <span class="at">year=</span><span class="dv">2015</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>Montgomery_BG <span class="ot">&lt;-</span> tigris<span class="sc">::</span><span class="fu">block_groups</span>(<span class="at">state=</span><span class="st">&quot;PA&quot;</span>, <span class="at">county=</span><span class="st">&quot;Montgomery&quot;</span>, <span class="at">class=</span><span class="st">&quot;sf&quot;</span>, <span class="at">year=</span><span class="dv">2015</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>Mercer_BG <span class="ot">&lt;-</span> tigris<span class="sc">::</span><span class="fu">block_groups</span>(<span class="at">state=</span><span class="st">&quot;NJ&quot;</span>, <span class="at">county=</span><span class="st">&quot;Mercer&quot;</span>, <span class="at">class=</span><span class="st">&quot;sf&quot;</span>, <span class="at">year=</span><span class="dv">2015</span>)</span></code></pre></div>
+<p>For each county, let’s join the data tables to the boundary files by
+GEOID, which is a variable found in both the data tables and boundary
+tables - it’s like doing a <em>Join by attribute</em> in ArcGIS.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>Philadelphia_geojoin <span class="ot">&lt;-</span>tigris<span class="sc">::</span><span class="fu">geo_join</span>(Philadelphia_BG, Philadelphia, <span class="at">by=</span><span class="st">&quot;GEOID&quot;</span>, <span class="at">how=</span><span class="st">&quot;inner&quot;</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>Montgomery_geojoin <span class="ot">&lt;-</span>tigris<span class="sc">::</span><span class="fu">geo_join</span>(Montgomery_BG, Montgomery, <span class="at">by=</span><span class="st">&quot;GEOID&quot;</span>, <span class="at">how=</span><span class="st">&quot;inner&quot;</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>Mercer_geojoin <span class="ot">&lt;-</span>tigris<span class="sc">::</span><span class="fu">geo_join</span>(Mercer_BG, Mercer, <span class="at">by=</span><span class="st">&quot;GEOID&quot;</span>, <span class="at">how=</span><span class="st">&quot;inner&quot;</span>)</span></code></pre></div>
+<p>Now, let’s create a single shapefile containing the 2015 ACS
+variables we extracted for all block groups in Philadelphia, Montgomery
+and Mercer counties. Then, let’s see what kind of R object CensusData
+is.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>CensusData <span class="ot">&lt;-</span> <span class="fu">rbind</span>(Philadelphia_geojoin, Montgomery_geojoin, Mercer_geojoin)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(CensusData)</span></code></pre></div>
+<pre><code>## [1] &quot;sf&quot;         &quot;data.frame&quot;</code></pre>
+<p>Finally, let’s calculate a few new variables from existing ones.
+Here, <code>pct_white</code> is number of people who are white divided
+by total number of people in block group; <code>pct_black</code> is
+number of people who are black divided by total number of people in
+block group; and <code>pct_vacant</code> is number of vacant housing
+units divided by total housing units in block group</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>CensusData<span class="sc">$</span>pct_white <span class="ot">&lt;-</span> CensusData<span class="sc">$</span>B02001_002E<span class="sc">/</span>CensusData<span class="sc">$</span>B00001_001E</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>CensusData<span class="sc">$</span>pct_black <span class="ot">&lt;-</span> CensusData<span class="sc">$</span>B02001_003E<span class="sc">/</span>CensusData<span class="sc">$</span>B00001_001E</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>CensusData<span class="sc">$</span>pct_vacant <span class="ot">&lt;-</span> CensusData<span class="sc">$</span>B25002_003E<span class="sc">/</span>CensusData<span class="sc">$</span>B25002_001E</span></code></pre></div>
+<p>Looking at the variables in the data frame <code>CensusData</code>,
+we see that these three new variables appear as well.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(CensusData)</span></code></pre></div>
+<pre><code>## Simple feature collection with 6 features and 44 fields
+## Active geometry column: geometry.x
+## Geometry type: MULTIPOLYGON
+## Dimension:     XY
+## Bounding box:  xmin: -75.23633 ymin: 39.91309 xmax: -75.05358 ymax: 40.0748
+## Geodetic CRS:  NAD83
+##   STATEFP COUNTYFP TRACTCE BLKGRPCE        GEOID      NAMELSAD MTFCC FUNCSTAT
+## 1      42      101  028300        1 421010283001 Block Group 1 G5030        S
+## 2      42      101  028400        1 421010284001 Block Group 1 G5030        S
+## 3      42      101  003800        2 421010038002 Block Group 2 G5030        S
+## 4      42      101  021800        2 421010218002 Block Group 2 G5030        S
+## 5      42      101  003001        5 421010030015 Block Group 5 G5030        S
+## 6      42      101  033702        2 421010337022 Block Group 2 G5030        S
+##    ALAND AWATER    INTPTLAT     INTPTLON
+## 1  69892      0 +40.0299231 -075.1408226
+## 2  94790      0 +40.0293965 -075.1380180
+## 3 867993      0 +39.9176829 -075.1841030
+## 4 368847      0 +40.0530080 -075.2333246
+## 5  43992      0 +39.9304568 -075.1730479
+## 6 585041      0 +40.0704691 -075.0613526
+##                                                                    NAME
+## 1    Block Group 1, Census Tract 283, Philadelphia County, Pennsylvania
+## 2    Block Group 1, Census Tract 284, Philadelphia County, Pennsylvania
+## 3     Block Group 2, Census Tract 38, Philadelphia County, Pennsylvania
+## 4    Block Group 2, Census Tract 218, Philadelphia County, Pennsylvania
+## 5  Block Group 5, Census Tract 30.01, Philadelphia County, Pennsylvania
+## 6 Block Group 2, Census Tract 337.02, Philadelphia County, Pennsylvania
+##   B02001_002E B02001_002M B02001_003E B02001_003M B19013_001E B19013_001M
+## 1         121         197         296         120       25613       11971
+## 2         212         220        1080         349       32500       17231
+## 3         852         177           2           4       39128        4108
+## 4        1154         242         412         275       46894       18337
+## 5         336         359         208         155       43831       10588
+## 6        1010         322         141         192       67569       44711
+##   B25001_001E B25001_001M B25002_001E B25002_001M B25002_002E B25002_002M
+## 1         256         112         256         112         230         104
+## 2         421          97         421          97         404          98
+## 3         428          67         428          67         428          67
+## 4         782         138         782         138         782         138
+## 5         233          72         233          72         233          72
+## 6         766         132         766         132         675         136
+##   B25002_003E B25002_003M B25003_001E B25003_001M B25003_002E B25003_002M
+## 1          26          43         230         104         128          73
+## 2          17          19         404          98         320          97
+## 3           0          10         428          67         278          64
+## 4           0          10         782         138         357         100
+## 5           0          10         233          72         106          43
+## 6          91          79         675         136         541         140
+##   B25003_003E B25003_003M B25058_001E B25058_001M B25064_001E B25064_001M
+## 1         102          79         504         125         695         244
+## 2          84          66         672          81         925         218
+## 3         150          54         843          86         964          47
+## 4         425         133        1080          51        1084          53
+## 5         127          73         776         399        1315         170
+## 6         134          73         784          89         930          87
+##   B25077_001E B25077_001M B00001_001E B00002_001E
+## 1       81500       50463          20          12
+## 2       85900       14345         102          34
+## 3      229000       13256          91          43
+## 4      246900       39715          66          35
+## 5      157900      102514          57          21
+## 6      224300       13957         112          53
+##                       geometry.x                     geometry.y pct_white
+## 1 MULTIPOLYGON (((-75.14202 4... MULTIPOLYGON (((-75.14167 4...  6.050000
+## 2 MULTIPOLYGON (((-75.13966 4... MULTIPOLYGON (((-75.1393 40...  2.078431
+## 3 MULTIPOLYGON (((-75.1903 39... MULTIPOLYGON (((-75.19022 3...  9.362637
+## 4 MULTIPOLYGON (((-75.23633 4... MULTIPOLYGON (((-75.23604 4... 17.484848
+## 5 MULTIPOLYGON (((-75.17494 3... MULTIPOLYGON (((-75.17476 3...  5.894737
+## 6 MULTIPOLYGON (((-75.06981 4... MULTIPOLYGON (((-75.06886 4...  9.017857
+##     pct_black pct_vacant
+## 1 14.80000000 0.10156250
+## 2 10.58823529 0.04038005
+## 3  0.02197802 0.00000000
+## 4  6.24242424 0.00000000
+## 5  3.64912281 0.00000000
+## 6  1.25892857 0.11879896</code></pre>
 </div>
 
    

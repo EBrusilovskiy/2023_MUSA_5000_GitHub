@@ -9,7 +9,7 @@ output: rmdformats::readthedown
 
 First, let's set the working directory and import the data.
 
-```{r setup, include=FALSE}
+```{r setup, include=TRUE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(root.dir = "C:\\Users\\eugeneby\\Dropbox\\Documents\\Work and School\\Teaching\\CPLN 671 - Statistics and Data Mining\\2023_MUSA_5000_GitHub\\Data\\Lecture 17 - R")
 
