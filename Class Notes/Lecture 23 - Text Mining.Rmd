@@ -1,0 +1,356 @@
+---
+title: "Text Analysis"
+author: "Eugene Brusilovskiy"
+date: "`r Sys.Date()`"
+output: rmdformats::readthedown
+---
+
+## Description
+
+Here, we have a list of 47 classical books which we obtain from the Gutenberg project (www.gutenberg.org). These classical works include War and Peace, Jane Eyre, Moby Dick, Les Miserables, and many others, which are listed later on in this document. 
+
+
+
+## Data Preparation
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+First, let's load the required `R` libraries.
+
+```{r libraries, message=FALSE, warning=FALSE}
+library(wordcloud)
+library(text)
+library(tm)
+library(SnowballC)
+library(words)
+library(NbClust)
+library(stringr)
+library(dplyr)
+library(tidytext)
+library(textdata)
+```
+
+Now, it's time to load and preprocess the text of the books from www.gutenberg.org.
+```{r load-data}
+# Define the URLs of the text documents
+urls <- c(
+  "https://www.gutenberg.org/cache/epub/2600/pg2600.txt",
+  "https://www.gutenberg.org/files/2554/2554-0.txt",
+  "https://www.gutenberg.org/cache/epub/42671/pg42671.txt",
+  "https://www.gutenberg.org/files/98/98-0.txt",
+  "https://www.gutenberg.org/cache/epub/158/pg158.txt",
+  "https://www.gutenberg.org/cache/epub/28054/pg28054.txt",
+  "https://www.gutenberg.org/cache/epub/1260/pg1260.txt",
+  "https://www.gutenberg.org/cache/epub/64317/pg64317.txt",
+  "https://www.gutenberg.org/cache/epub/768/pg768.txt",
+  "https://www.gutenberg.org/files/2701/2701-0.txt",
+  "https://www.gutenberg.org/cache/epub/215/pg215.txt",
+  "https://www.gutenberg.org/cache/epub/84/pg84.txt",
+  "https://www.gutenberg.org/cache/epub/514/pg514.txt",
+  "https://www.gutenberg.org/cache/epub/599/pg599.txt",
+  "https://www.gutenberg.org/cache/epub/1399/pg1399.txt",
+  "https://www.gutenberg.org/cache/epub/1184/pg1184.txt",
+  "https://www.gutenberg.org/files/1400/1400-0.txt",
+  "https://www.gutenberg.org/files/135/135-0.txt",
+  "https://www.gutenberg.org/cache/epub/345/pg345.txt",
+  "https://www.gutenberg.org/files/2413/2413-0.txt",
+  "https://www.gutenberg.org/cache/epub/996/pg996.txt",
+  "https://www.gutenberg.org/files/65473/65473-0.txt",
+  "https://www.gutenberg.org/cache/epub/76/pg76.txt",
+  "https://www.gutenberg.org/cache/epub/4078/pg4078.txt",
+  "https://www.gutenberg.org/cache/epub/910/pg910.txt",
+  "https://www.gutenberg.org/files/24022/24022-0.txt",
+  "https://www.gutenberg.org/files/2638/2638-0.txt",
+  "https://www.gutenberg.org/files/35/35-0.txt",
+  "https://www.gutenberg.org/cache/epub/541/pg541.txt",
+  "https://www.gutenberg.org/cache/epub/351/pg351.txt",
+  "https://www.gutenberg.org/cache/epub/26/pg26.txt",
+  "https://www.gutenberg.org/cache/epub/70841/pg70841.txt",
+  "https://www.gutenberg.org/cache/epub/19942/pg19942.txt",
+  "https://www.gutenberg.org/files/940/940-0.txt",
+  "https://www.gutenberg.org/files/1081/1081-0.txt",
+  "https://www.gutenberg.org/cache/epub/25344/pg25344.txt",
+  "https://www.gutenberg.org/cache/epub/27780/pg27780.txt",
+  "https://www.gutenberg.org/files/4300/4300-0.txt",
+  "https://www.gutenberg.org/cache/epub/7849/pg7849.txt",
+  "https://www.gutenberg.org/cache/epub/1257/pg1257.txt",
+  "https://www.gutenberg.org/files/5200/5200-0.txt",
+  "https://www.gutenberg.org/cache/epub/63203/pg63203.txt",
+  "https://www.gutenberg.org/cache/epub/1232/pg1232.txt",
+  "https://www.gutenberg.org/files/3207/3207-0.txt",
+  "https://www.gutenberg.org/cache/epub/766/pg766.txt",
+  "https://www.gutenberg.org/cache/epub/2610/pg2610.txt",
+  "https://www.gutenberg.org/files/2130/2130-0.txt"
+)
+```
+
+## Data Preprocessing 
+
+The first thing we want to do is to convert the text in all of these URLS into a Corpus. A text corpus (plural: corpora) "is a large and unstructured set of texts (nowadays usually electronically stored and processed) used to do statistical analysis and hypothesis testing, checking occurrences or validating linguistic rules within a specific language territory." (Source: https://guides.library.uq.edu.au/research-techniques/text-mining-analysis/language-corpora#:~:text=A%20text%20corpus%20is%20a,within%20a%20specific%20language%20territory.)
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+# Load and preprocess all text documents
+myCorpus <- tm::VCorpus(VectorSource(sapply(urls, readLines)))
+
+# Convert everything to lower case
+myCorpus <- tm_map(myCorpus, content_transformer(tolower))
+```
+
+Let's look at the first 1000 lines of the first entry (document) in the corpus, which happens to be Tolstoy's War and Peace.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+cat(content(myCorpus[[1]])[1:1000], sep = "\n")
+```
+
+Now that we have the data in a corpus, let's do some data cleaning, by converting a bunch of special characters (e.g., @, /, ], $) to a space. Here, we can ignore the "transformation drops documents" warning messages if they come up.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+#     Defining the toSpace function
+toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+#     Removing special characters
+myCorpus <- tm_map(myCorpus, toSpace, "@")
+myCorpus <- tm_map(myCorpus, toSpace, "/")
+myCorpus <- tm_map(myCorpus, toSpace, "]")
+myCorpus <- tm_map(myCorpus, toSpace, "$")
+myCorpus <- tm_map(myCorpus, toSpace, "—")
+myCorpus <- tm_map(myCorpus, toSpace, "‐")
+myCorpus <- tm_map(myCorpus, toSpace, "”")
+myCorpus <- tm_map(myCorpus, toSpace, "‘")
+myCorpus <- tm_map(myCorpus, toSpace, "“")
+myCorpus <- tm_map(myCorpus, toSpace, "‘")
+myCorpus <- tm_map(myCorpus, toSpace, "’")
+```
+
+Similarly, let's remove apostrophes from the text (e.g., convert "don't" to "dont")
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+#     Defining the remApostrophe function
+remApostrophe <- content_transformer(function(x, pattern) gsub(pattern, "", x))
+#     Removing special characters
+myCorpus <- tm_map(myCorpus, remApostrophe, "’")
+```
+
+We can again look at the first entry of the corpus:
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+cat(content(myCorpus[[1]])[1:1000], sep = "\n")
+```
+
+Now, let's remove numbers and punctuation.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+myCorpus <- tm::tm_map(myCorpus, removeNumbers)
+myCorpus <- tm_map(myCorpus, removePunctuation)
+```
+
+Now, let's look at a list of English stop words (e.g., a, to) that we can remove from the documents. Stop words are frequent terms that often don't provide a lot of useful information.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+stopwords("english")
+myCorpus <- tm_map(myCorpus, removeWords, stopwords("english"))
+```
+
+We can also remove additional (i.e., self-defined) stop words, such as "ebook".
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+myCorpus <- tm_map(myCorpus, removeWords,c("ebook", "author", "translators", "start wwwgutenbergorg", "gutenberg", "chapter", "book", "contents"))
+cat(content(myCorpus[[1]])[1:1000], sep = "\n")
+```
+
+Lastly, depending on the problem, we can potentially play around with stemming. This removes common word suffixes and endings like "es", "ed", "ing", etc. Alternatively, there is lemmatization, which groups together different inflected forms of the same word. Lemmatization can also be done in R.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+#myCorpus <- tm_map(myCorpus, stemDocument)
+cat(content(myCorpus[[1]])[1:1000], sep = "\n")
+```
+
+## Term Document Matrix
+
+The next (optional) step is to create a term document matrix (TDM). Technically, this step here is unnecessary, but is presented for the sake of demonstration. A TDM is a representation of how frequently different terms (shown in rows) appear in each of the documents (shown in columns). The transpose of the TDM is the document term matrix (DTM), where the rows and columns are switched.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+tdm <- TermDocumentMatrix(myCorpus)
+tm::inspect(tdm)
+```
+
+Now, let's convert the TDM to a matrix that we call `m`. Each of the rows in `m` corresponds to each of the unique terms (words) that appears in the documents, and each of the columns corresponds to each document. 
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+m<- as.matrix(tdm)
+dim(m)
+rownames(m) <- tdm$dimnames$Terms
+colnames(m) <- c("War and Peace", "Crime and Punishment", "Pride and Prejudice", "Tale of Two Cities", "Emma", "Brothers Karamazov", "Jane Eyre", 
+"The Great Gatsby", "Wuthering Heights", "Moby Dick", "Call of the Wild", "Frankenstein", "Little Women", "Vanity Fair", "Anna Karenina", 
+"Count of Monte Cristo", "Great Expectations", "Les Miserables", "Dracula", "Madame Bovary", "Don Quixote", "Gullivers Travels", "Huckleberry Finn", 
+"Picture of Dorian Gray", "White Fang", "A Christmas Carol", "The Idiot", "The Time Machine", "Age of Innocence", "Of Human Bondage", "Paradise Lost", 
+"Robinson Crusoe", "Candide", "Last of the Mohicans", "Dead Souls", "Scarlet Letter", "Treasure Island", "Ulysses", "The Trial", "The Three Musketeers", "The Metamorphosis", "Faust", "The Prince", "Leviathan", "David Copperfield", "Notre Dame de Paris", "Utopia")
+head(m)
+```
+
+Let's filter our data to include only those words that are actually in the Scrabble Dictionary (available through the `r` package `words`). Again, this step is not really necessary, but is shown for the sake of demonstration.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+dictionary <- as.character(words$word)
+row_names <- rownames(m)
+in_dictionary <- row_names %in% dictionary
+remove <- as.character(row_names[!in_dictionary])
+
+#Since the data are so large, if we try to remove all words at once, we get an error. So we will remove them in chunks of 1000.
+
+num_observations <- as.numeric(length(remove))  # Total number of observations
+chunk_size <- 1000                              # Number of observations to display at a time
+
+for (i in seq(1, num_observations, chunk_size)) {
+  start <- i
+  end <- i + chunk_size - 1
+  end <- ifelse(end > num_observations, num_observations, end)
+  myCorpus <- tm_map(myCorpus, removeWords, remove[start:end])  
+}
+```
+
+## Document Term Matrix
+
+Now, let's convert the corpus to a document term matrix (DTM). This is the format that we actually want - where the documents are rows, and terms are columns.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+dtm_cleaned <- DocumentTermMatrix(myCorpus)
+tm::inspect(dtm_cleaned)
+```
+
+As earlier, let's convert the DTM to a matrix.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+m <- as.matrix(dtm_cleaned)
+dim(m)
+colnames(m) <- dtm_cleaned$dimnames$Terms
+rownames(m) <- c("War and Peace", "Crime and Punishment", "Pride and Prejudice", "Tale of Two Cities", "Emma", "Brothers Karamazov", "Jane Eyre", 
+"The Great Gatsby", "Wuthering Heights", "Moby Dick", "Call of the Wild", "Frankenstein", "Little Women", "Vanity Fair", "Anna Karenina", 
+"Count of Monte Cristo", "Great Expectations", "Les Miserables", "Dracula", "Madame Bovary", "Don Quixote", "Gullivers Travels", "Huckleberry Finn", 
+"Picture of Dorian Gray", "White Fang", "A Christmas Carol", "The Idiot", "The Time Machine", "Age of Innocence", "Of Human Bondage", "Paradise Lost", 
+"Robinson Crusoe", "Candide", "Last of the Mohicans", "Dead Souls", "Scarlet Letter", "Treasure Island", "Ulysses", "The Trial", "The Three Musketeers", "The Metamorphosis", "Faust", "The Prince", "Leviathan", "David Copperfield", "Notre Dame de Paris", "Utopia")
+```
+
+Now, let's remove all variables (i.e., terms) that have few appearances
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+cs <- as.matrix(colSums(m))             #How many times each term appears across all documents (texts)
+rownames(cs) <- tdm_tf$dimnames$Terms
+
+hist(cs, breaks=100)                    #Let's look at some histograms/tabulations/word cloud of total term appearance. 
+tab <- as.matrix(table(cs))
+wordcloud(myCorpus, min.freq=1000)
+```
+
+
+Now, let's proceed to cluster analysis. First, let's remove each variable if the column sum is less than 10,000 (i.e., if the term appears less than 10,000 times in all documents). We are only doing it here so that we have a reasonable number of variables to include in the cluster analysis for the sake of this example. If we were to have a lot more observations, we wouldn't necessarily need or want to do this.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+variables_to_remove <- cs < 10000
+
+# Subset matrix frame, excluding those variables
+m_subset <- m[, !variables_to_remove]
+```
+
+Let's do some additional data preparation for the cluster analysis.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+#Some books are longer, others are shorter. Let's divide the frequencies by the total number of words (after processing) in each book.
+m_fin <- m_subset/rowSums(m)
+
+#Let's scale (normalize) each of the variables (relative frequency)
+m_scale <- scale(m_fin)
+```
+
+Of course, before performing the k-means analysis on the scaled (normalized) relative frequencies of words, we need to identify the optimal number of clusters. We do this using the Scree Plot and the `NbClust` package in R.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+#Scree Plot
+wss <- (nrow(m_scale)-1)*sum(apply(m_scale,2,var))
+for (i in 2:20) wss[i] <- sum(kmeans(m_scale, 
+                                     centers=i)$withinss)
+plot(1:20, wss, type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+
+#NbClust approach
+set.seed(1234)
+nc <- NbClust(m_scale, min.nc=2, max.nc=15, method="kmeans", index="all")
+table(nc$Best.n[1,])
+par(mfrow=c(1,1)) 
+barplot(table(nc$Best.n[1,]),
+        xlab="Numer of Clusters", ylab="Number of Criteria",
+        main="Number of Clusters Chosen by 26 Criteria")
+```
+
+We will use 2 clusters based on the NbClust approach, since the scree plot doesn't yield a clear recommendation.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+k_means_results <- kmeans(m_scale, 2, 30)
+```
+
+Let's see which book falls in which cluster, as well as each cluster's size.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+k_means_results$cluster
+k_means_results$size
+```
+
+Finally, let's look at the number of times each of the terms appears in each cluster. We can also do this with proportions - that may make more sense. Ultimately, we see that certain terms have different frequencies in the clusters, but again, relative frequencies may be more relevant here.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+word_totals_by_cluster <- round(aggregate(m_subset, by=list(cluster=k_means_results$cluster), sum),1)
+
+#Let's plot the results!
+#Decrease font size and rotate x-axis labels vertically
+par(cex.axis = 0.7)  # Adjust the font size
+par(las = 2)        # Rotate labels vertically
+
+barplot(as.matrix(word_totals_by_cluster[-1]),
+        beside = TRUE,
+        col = c("blue", "green"),
+        legend.text = TRUE,
+        args.legend = list(x = "topright"))
+
+# Add labels to the x-axis and y-axis. Here, the first cluster is in blue and the second one is in green.
+title(xlab = "Cluster")
+title(ylab = "Sum")
+
+# Add a title to the plot
+title(main = "Bar Plot of Sums by Group")
+```
+
+
+## Sentiment Analysis using AFINN
+
+AFINN is a popular sentiment lexicon which is available in the `textdata` package. A sentiment lexicon, also known as a sentiment dictionary, is a collection of words or phrases annotated with sentiment polarity information. It associates each word or phrase with a sentiment score indicating its positive, negative, or neutral sentiment. Sentiment lexicons are commonly used in sentiment analysis tasks to determine the sentiment or emotional tone expressed in text. A lot of the words are omitted from these lexicons, because they are neutral (e.g., hair, purple, walk). AFINN takes a list of words that are not neutral (e.g., horrible, amazing) and assigns to it a score between -5 (negative sentiment) to 5 (positive sentiment). 
+
+What we hope to achieve with sentiment analysis is to examine the sentiment in a body of text. This is often done by aggregating (i.e., averaging or summing) AFINN scores of all the words in the text, but the issue is that for longer texts, the positive and negative terms often tend to wash each other out. Therefore, shorter texts of a few sentences or paragraphs work well.
+
+Another thing to keep in mind is that this approach doesn't take into consideration the negative terms preceeding a word (e.g., NOT good) or sarcasm (I'm fired? Well that's just GREAT!). Additional data preprocessing may be necessary for this approach to work as intended.
+
+Other lexicons include Bing, which simply tells whether the sentiment is positive, negative or neutral, and the NRC lexicon, which maps each word to one or more sentiments.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+get_sentiments("afinn")
+get_sentiments("bing")
+get_sentiments("nrc")
+```
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+tidy_books <- content(myCorpus[[1]])
+```
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+library(janeaustenr)
+library(dplyr)
+library(stringr)
+
+tidy_books <- austen_books() %>%
+  group_by(book) %>%
+  mutate(
+    linenumber = row_number(),
+    chapter = cumsum(str_detect(text, 
+                                regex("^chapter [\\divxlc]", 
+                                      ignore_case = TRUE)))) %>%
+  ungroup() %>%
+  unnest_tokens(word, text)
+```
