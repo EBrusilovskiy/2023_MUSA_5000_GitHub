@@ -5,7 +5,7 @@ date: "`r Sys.Date()`"
 output: rmdformats::readthedown
 ---
 
-
+The aim of this Markdown is to demonstrate the use of various text analysis tools in R, including text clustering, word clouds and sentiment analysis.
 
 ## Data Description
 
