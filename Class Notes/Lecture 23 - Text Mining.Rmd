@@ -5,17 +5,15 @@ date: "`r Sys.Date()`"
 output: rmdformats::readthedown
 ---
 
-## Description
-
-Here, we have a list of 47 classical books which we obtain from the Gutenberg project (www.gutenberg.org). These classical works include War and Peace, Jane Eyre, Moby Dick, Les Miserables, and many others, which are listed later on in this document. 
 
 
-
-## Data Preparation
+## Data Description
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+Here, we have a list of 47 classical books which we obtain from the Gutenberg project (www.gutenberg.org). These classical works include War and Peace, Jane Eyre, Moby Dick, Les Miserables, and many others, which are listed later on in this document. 
 
 First, let's load the required `R` libraries.
 
@@ -28,8 +26,7 @@ library(words)
 library(NbClust)
 library(stringr)
 library(dplyr)
-library(tidytext)
-library(textdata)
+library(syuzhet)
 ```
 
 Now, it's time to load and preprocess the text of the books from www.gutenberg.org.
@@ -88,7 +85,7 @@ urls <- c(
 
 ## Data Preprocessing 
 
-The first thing we want to do is to convert the text in all of these URLS into a Corpus. A text corpus (plural: corpora) "is a large and unstructured set of texts (nowadays usually electronically stored and processed) used to do statistical analysis and hypothesis testing, checking occurrences or validating linguistic rules within a specific language territory." (Source: https://guides.library.uq.edu.au/research-techniques/text-mining-analysis/language-corpora#:~:text=A%20text%20corpus%20is%20a,within%20a%20specific%20language%20territory.)
+The first thing we want to do is to convert the text in all of these URLS into a Corpus. A text corpus (plural: _corpora_) "is a large and unstructured set of texts (nowadays usually electronically stored and processed) used to do statistical analysis and hypothesis testing, checking occurrences or validating linguistic rules within a specific language territory."
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 # Load and preprocess all text documents
@@ -98,17 +95,19 @@ myCorpus <- tm::VCorpus(VectorSource(sapply(urls, readLines)))
 myCorpus <- tm_map(myCorpus, content_transformer(tolower))
 ```
 
-Let's look at the first 1000 lines of the first entry (document) in the corpus, which happens to be Tolstoy's War and Peace.
+Let's look at lines 980-1000 of the first entry (document) in the corpus, which happens to be Tolstoy's War and Peace. (The first 600 or so lines include information about the ebook, and the Table of Contents.)
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
-cat(content(myCorpus[[1]])[1:1000], sep = "\n")
+cat(content(myCorpus[[1]])[980:1000], sep = "\n")
 ```
 
-Now that we have the data in a corpus, let's do some data cleaning, by converting a bunch of special characters (e.g., @, /, ], $) to a space. Here, we can ignore the "transformation drops documents" warning messages if they come up.
+Now that we have the data in a corpus, let's do some data cleaning, by converting a bunch of special characters (e.g., **@**, **/**, **]**, **$**) to a space and by removing apostrophes.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 #     Defining the toSpace function
 toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+#     Defining the remApostrophe function
+remApostrophe <- content_transformer(function(x,pattern) gsub(pattern, "", x))
 #     Removing special characters
 myCorpus <- tm_map(myCorpus, toSpace, "@")
 myCorpus <- tm_map(myCorpus, toSpace, "/")
@@ -120,22 +119,14 @@ myCorpus <- tm_map(myCorpus, toSpace, "”")
 myCorpus <- tm_map(myCorpus, toSpace, "‘")
 myCorpus <- tm_map(myCorpus, toSpace, "“")
 myCorpus <- tm_map(myCorpus, toSpace, "‘")
-myCorpus <- tm_map(myCorpus, toSpace, "’")
-```
-
-Similarly, let's remove apostrophes from the text (e.g., convert "don't" to "dont")
-
-```{r warning=FALSE, message=FALSE, cache=FALSE}
-#     Defining the remApostrophe function
-remApostrophe <- content_transformer(function(x, pattern) gsub(pattern, "", x))
-#     Removing special characters
 myCorpus <- tm_map(myCorpus, remApostrophe, "’")
 ```
 
-We can again look at the first entry of the corpus:
+
+We can again look at the first entry of the corpus. Here, let's look at lines 980-1000.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
-cat(content(myCorpus[[1]])[1:1000], sep = "\n")
+cat(content(myCorpus[[1]])[980:1000], sep = "\n")
 ```
 
 Now, let's remove numbers and punctuation.
@@ -143,27 +134,30 @@ Now, let's remove numbers and punctuation.
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 myCorpus <- tm::tm_map(myCorpus, removeNumbers)
 myCorpus <- tm_map(myCorpus, removePunctuation)
+cat(content(myCorpus[[1]])[980:1000], sep = "\n")
 ```
 
-Now, let's look at a list of English stop words (e.g., a, to) that we can remove from the documents. Stop words are frequent terms that often don't provide a lot of useful information.
+Now, let's look at a list of English stop words (e.g., _a_, _to_) that we can remove from the documents. Stop words are frequent terms that often don't provide a lot of useful information.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 stopwords("english")
 myCorpus <- tm_map(myCorpus, removeWords, stopwords("english"))
+cat(content(myCorpus[[1]])[980:1000], sep = "\n")
 ```
 
-We can also remove additional (i.e., self-defined) stop words, such as "ebook".
+We can also remove additional (i.e., self-defined) stop words, such as _ebook_ that appear in the first few lines of the text.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
-myCorpus <- tm_map(myCorpus, removeWords,c("ebook", "author", "translators", "start wwwgutenbergorg", "gutenberg", "chapter", "book", "contents"))
-cat(content(myCorpus[[1]])[1:1000], sep = "\n")
+myCorpus <- tm_map(myCorpus, removeWords,c("ebook", "author", "translators", 
+                                           "start wwwgutenbergorg", "gutenberg", "chapter", "book", "contents"))
+cat(content(myCorpus[[1]])[980:1000], sep = "\n")
 ```
 
-Lastly, depending on the problem, we can potentially play around with stemming. This removes common word suffixes and endings like "es", "ed", "ing", etc. Alternatively, there is lemmatization, which groups together different inflected forms of the same word. Lemmatization can also be done in R.
+Lastly, depending on the problem, we can potentially play around with stemming. This removes common word suffixes and endings like _es_, _ed_, _ing_, etc. Alternatively, there is lemmatization, which groups together different inflected forms of the same word. Lemmatization can also be done in R.
 
-```{r warning=FALSE, message=FALSE, cache=FALSE}
-#myCorpus <- tm_map(myCorpus, stemDocument)
-cat(content(myCorpus[[1]])[1:1000], sep = "\n")
+```{r warning=FALSE, message=FALSE, cache=FALSE, eval=FALSE}
+myCorpus <- tm_map(myCorpus, stemDocument)
+cat(content(myCorpus[[1]])[980:1000], sep = "\n")
 ```
 
 ## Term Document Matrix
@@ -192,7 +186,7 @@ head(m)
 Let's filter our data to include only those words that are actually in the Scrabble Dictionary (available through the `r` package `words`). Again, this step is not really necessary, but is shown for the sake of demonstration.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
-dictionary <- as.character(words$word)
+dictionary <- as.character(words::words$word)
 row_names <- rownames(m)
 in_dictionary <- row_names %in% dictionary
 remove <- as.character(row_names[!in_dictionary])
@@ -210,9 +204,15 @@ for (i in seq(1, num_observations, chunk_size)) {
 }
 ```
 
+Let's look at the terms that were dropped in myCorpus -- these are all the words that aren't in the Scrabble Dictionary (e.g., names like _Anatole_).
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+cat(content(myCorpus[[1]])[980:1000], sep = "\n")
+```
+
 ## Document Term Matrix
 
-Now, let's convert the corpus to a document term matrix (DTM). This is the format that we actually want - where the documents are rows, and terms are columns.
+Now that `myCorpus` has had all the words that aren't in the dictionary removed, let's convert it to a document term matrix (DTM). This is the format that we actually want - where the documents are rows, and terms are columns.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 dtm_cleaned <- DocumentTermMatrix(myCorpus)
@@ -231,18 +231,18 @@ rownames(m) <- c("War and Peace", "Crime and Punishment", "Pride and Prejudice",
 "Robinson Crusoe", "Candide", "Last of the Mohicans", "Dead Souls", "Scarlet Letter", "Treasure Island", "Ulysses", "The Trial", "The Three Musketeers", "The Metamorphosis", "Faust", "The Prince", "Leviathan", "David Copperfield", "Notre Dame de Paris", "Utopia")
 ```
 
-Now, let's remove all variables (i.e., terms) that have few appearances
+Now, let's look at the term distribution. The histogram and tabulation can show us the distribution of term frequency across all terms. We can see that there are a lot of terms that appear only a few times, while some others appear thousands of times. The word cloud shows us the terms that appear the most, such that higher frequency is indicated by a larger font.
+
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 cs <- as.matrix(colSums(m))             #How many times each term appears across all documents (texts)
-rownames(cs) <- tdm_tf$dimnames$Terms
+rownames(cs) <- dtm_cleaned$dimnames$Terms
 
 hist(cs, breaks=100)                    #Let's look at some histograms/tabulations/word cloud of total term appearance. 
 tab <- as.matrix(table(cs))
 wordcloud(myCorpus, min.freq=1000)
 ```
 
-
-Now, let's proceed to cluster analysis. First, let's remove each variable if the column sum is less than 10,000 (i.e., if the term appears less than 10,000 times in all documents). We are only doing it here so that we have a reasonable number of variables to include in the cluster analysis for the sake of this example. If we were to have a lot more observations, we wouldn't necessarily need or want to do this.
+In our preparation for cluster analysis, let's remove all variables where the column sum is less than 10,000 (i.e., if the term appears less than 10,000 times in all documents). We are only doing it here so that we have a reasonable number of variables to include in the cluster analysis for the sake of this example. If we were to have a lot more observations, we wouldn't necessarily need or want to do this.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 variables_to_remove <- cs < 10000
@@ -261,6 +261,8 @@ m_fin <- m_subset/rowSums(m)
 m_scale <- scale(m_fin)
 ```
 
+## Text Clustering
+
 Of course, before performing the k-means analysis on the scaled (normalized) relative frequencies of words, we need to identify the optimal number of clusters. We do this using the Scree Plot and the `NbClust` package in R.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
@@ -274,7 +276,7 @@ plot(1:20, wss, type="b", xlab="Number of Clusters",
 #NbClust approach
 set.seed(1234)
 nc <- NbClust(m_scale, min.nc=2, max.nc=15, method="kmeans", index="all")
-table(nc$Best.n[1,])
+#table(nc$Best.n[1,])
 par(mfrow=c(1,1)) 
 barplot(table(nc$Best.n[1,]),
         xlab="Numer of Clusters", ylab="Number of Criteria",
@@ -287,7 +289,7 @@ We will use 2 clusters based on the NbClust approach, since the scree plot doesn
 k_means_results <- kmeans(m_scale, 2, 30)
 ```
 
-Let's see which book falls in which cluster, as well as each cluster's size.
+Let's see which book falls in which cluster, as well as each cluster's size. We see that there are 17 documents (books) in cluster 1 and 30 in cluster 2.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
 k_means_results$cluster
@@ -319,38 +321,128 @@ title(main = "Bar Plot of Sums by Group")
 ```
 
 
-## Sentiment Analysis using AFINN
+## Sentiment Analysis
 
-AFINN is a popular sentiment lexicon which is available in the `textdata` package. A sentiment lexicon, also known as a sentiment dictionary, is a collection of words or phrases annotated with sentiment polarity information. It associates each word or phrase with a sentiment score indicating its positive, negative, or neutral sentiment. Sentiment lexicons are commonly used in sentiment analysis tasks to determine the sentiment or emotional tone expressed in text. A lot of the words are omitted from these lexicons, because they are neutral (e.g., hair, purple, walk). AFINN takes a list of words that are not neutral (e.g., horrible, amazing) and assigns to it a score between -5 (negative sentiment) to 5 (positive sentiment). 
+The `syuzhet` package in R has several sentiment lexicons in it. A sentiment lexicon, also known as a sentiment dictionary, is a collection of words or phrases annotated with sentiment polarity information. It associates each word or phrase with a sentiment score indicating its positive, negative, or neutral sentiment. Sentiment lexicons are commonly used in sentiment analysis tasks to determine the sentiment or emotional tone expressed in text. A lot of the words are omitted from these lexicons, because they are neutral (e.g., _hair_, _purple_, _walk_). 
 
-What we hope to achieve with sentiment analysis is to examine the sentiment in a body of text. This is often done by aggregating (i.e., averaging or summing) AFINN scores of all the words in the text, but the issue is that for longer texts, the positive and negative terms often tend to wash each other out. Therefore, shorter texts of a few sentences or paragraphs work well.
+The lexicons in the `syuzhet` package include:
 
-Another thing to keep in mind is that this approach doesn't take into consideration the negative terms preceeding a word (e.g., NOT good) or sarcasm (I'm fired? Well that's just GREAT!). Additional data preprocessing may be necessary for this approach to work as intended.
+1. NRC Lexicon: The NRC (National Research Council) lexicon is a sentiment lexicon included in the `syuzhet` package. It contains a comprehensive list of words annotated with different sentiment categories, such as positive, negative, anger, fear, joy, sadness, and more. The NRC lexicon enables sentiment analysis by associating words with specific emotional dimensions.
 
-Other lexicons include Bing, which simply tells whether the sentiment is positive, negative or neutral, and the NRC lexicon, which maps each word to one or more sentiments.
+2. AFINN Lexicon: The AFINN lexicon is another sentiment lexicon available in `syuzhet`. It is based on a list of pre-computed sentiment scores for English words. Each word in the lexicon is assigned a score ranging from negative (-5) to positive (5), indicating its sentiment intensity. This lexicon is relatively simple and easy to use, making it popular for basic sentiment analysis tasks.
+
+3. Bing Lexicon: The Bing lexicon, also known as the Bing Liu lexicon, is a sentiment lexicon provided by the `syuzhet` package. It consists of words categorized as either positive or negative based on their sentiment. The Bing lexicon is often used in sentiment analysis applications and can help in determining the polarity of text.
+
+4. Syuzhet (Jockers) Lexicon: The Syuzhet lexicon is a sentiment lexicon specifically designed for the `syuzhet` package. It aims to capture sentiment by analyzing changes in the emotional intensity of a text over time. Unlike the NRC, AFINN, and Bing lexicons, the Syuzhet lexicon focuses on the temporal dynamics of sentiment, providing a unique perspective on the emotional trajectory within a piece of text. It may lend itself well to analyses presented here: https://www.tidytextmining.com/sentiment.html.
+
+These lexicons within the `syuzhet` package offer different approaches to sentiment analysis, ranging from basic word-based scoring to more complex temporal sentiment analysis techniques. Each lexicon has its own strengths and characteristics, allowing users to choose the most suitable approach based on their specific needs and requirements.
+
+We use sentiment analysis to examine the sentiment in an entire body of text. This is often done by aggregating (i.e., averaging or summing) sentiment scores of all the words in the text. One issue is that for longer texts, the positive and negative terms often tend to wash each other out. Therefore, shorter texts of a few sentences or paragraphs work well.
+
+Another thing to keep in mind is that this approach doesn't take into consideration the negative terms preceding a word (e.g., _NOT good_) or sarcasm (e.g., _I'm fired? Well that's just GREAT!_). Additional data preprocessing may be necessary for this approach to work as intended, though we will skip it here. Note that removal of stop words and some of the other pre-processing done earlier is generally unnecessary for sentiment analysis, because a lot of these terms (e.g., _a_, _the_, _through_, _such_) are neutral terms and won't affect the sentiment.
+
+Let's take a look at the four sentiment lexicons mentioned above. Here, we will print the first 20 terms of each of the lexicons.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
-get_sentiments("afinn")
-get_sentiments("bing")
-get_sentiments("nrc")
+nrc <- syuzhet::get_sentiment_dictionary(dictionary="nrc")
+head(nrc, n=20L)
+afinn <- syuzhet::get_sentiment_dictionary(dictionary="afinn")
+head(afinn, n=20L)
+bing <- syuzhet::get_sentiment_dictionary(dictionary="bing")
+head(bing, n=20L)
+syuzhet <- syuzhet::get_sentiment_dictionary(dictionary="syuzhet")
+head(syuzhet, n=20L)
 ```
+
+Now, let's play around with the `nrc` lexicon. First, we can get the sentiment for any term, e.g., gorgeous.
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+get_nrc_sentiment("gorgeous")
+```
+
+Now, let's go back to our book example. For the sake of this lexicon, let's take the first book in our data, War And Peace, which is the first row of the matrix `m`. The `get_nrc_sentiment` command obtains the sentiment score for each word in War And Peace that wasn't removed in the cleaning process above.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
-tidy_books <- content(myCorpus[[1]])
+War_And_Peace <- as.data.frame(m[1,])
+War_And_Peace$Term <- as.vector(rownames(War_And_Peace))
+colnames(War_And_Peace)[1] = "Term_Frequency"
+rownames(War_And_Peace) <- 1:nrow(War_And_Peace)
+
+nrc_sentiment <- get_nrc_sentiment(War_And_Peace$Term)
 ```
+
+Let's combine the original data frame and the sentiment counts.
 
 ```{r warning=FALSE, message=FALSE, cache=FALSE}
-library(janeaustenr)
-library(dplyr)
-library(stringr)
-
-tidy_books <- austen_books() %>%
-  group_by(book) %>%
-  mutate(
-    linenumber = row_number(),
-    chapter = cumsum(str_detect(text, 
-                                regex("^chapter [\\divxlc]", 
-                                      ignore_case = TRUE)))) %>%
-  ungroup() %>%
-  unnest_tokens(word, text)
+War_And_Peace_Sentiment <- cbind(War_And_Peace, nrc_sentiment)
 ```
+
+Now let's multiply the sentiment by the frequency of the term.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+# Select the columns to be multiplied (last ten columns)
+cols_to_multiply <- names(War_And_Peace_Sentiment)[3:12]
+
+# Multiply the last ten columns (sentiments) by the first column (Term_Frequency)
+War_And_Peace_Sentiment[, cols_to_multiply] <- War_And_Peace_Sentiment[, cols_to_multiply] * War_And_Peace_Sentiment$Term_Frequency
+```
+
+Now, let's see the total prevalence of each sentiment in the text by summing each column and creating a bar plot
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+War_And_Peace_Sentiment_Total <- t(as.matrix(colSums(War_And_Peace_Sentiment[,-1:-2])))
+barplot(War_And_Peace_Sentiment_Total, las=2, ylab='Count', main='Sentiment Scores')
+```
+
+Note that this can be done for each of the books, and then the total sentiment scores (ideally, weighted by the number of terms in each book and then normalized) can be subjected to a cluster analysis. This way, we can see if we can group the books based on the sentiments expressed, rather than the most frequently occurring terms themselves. This will be skipped in this Markdown.
+
+Now, let's play around with some of the other lexicons. Specifically, we will use the `get_sentiment` command to get the scores for each of the terms using each dictionary, and save the output to the original `War_And_Peace` data frame.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+War_And_Peace$Syuzhet <- as.matrix(get_sentiment(War_And_Peace$Term, method="syuzhet"))
+hist(War_And_Peace$Syuzhet)
+War_And_Peace$Bing <- as.matrix(get_sentiment(War_And_Peace$Term, method="bing"))
+hist(War_And_Peace$Bing)
+War_And_Peace$AFINN <- as.matrix(get_sentiment(War_And_Peace$Term, method="afinn"))
+hist(War_And_Peace$AFINN)
+War_And_Peace$NRC <- as.matrix(get_sentiment(War_And_Peace$Term, method="nrc"))   #There are Negative and Positive sentiments in the NRC output above.
+hist(War_And_Peace$NRC)
+
+```
+
+We can compare the results from the different lexicons by assigning a value of -1 to all terms that have a negative sentiment, 0 to all terms that have a neutral sentiment, and 1 to all terms that have a positive sentiment.
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+sentiment_columns <- War_And_Peace[ , 3:6]
+sentiment_columns <- data.frame(lapply(sentiment_columns, sign))
+sentiment_columns <- data.frame(lapply(sentiment_columns, as.factor))
+```
+
+Now, let's see the prevalence of _unique_ negative, neutral terms (here, we are talking about _unique_ terms because we are not weighing them by how often they appear in the document).
+
+```{r warning=FALSE, message=FALSE, cache=FALSE}
+#Raw frequencies
+sapply(sentiment_columns, function(x) if("factor" %in% class(x)) {table(x)})
+#Proportions
+sapply(sentiment_columns, function(x) if("factor" %in% class(x)) {prop.table(table(x))})
+```
+
+We can see that in general, most of the terms are neutral, with about 2-6% of terms being positive and 4-12% of the terms being negative, depending on which lexicon we use. 
+
+
+## References
+
+1. Hill, Chelsey. 2023. "Sentiment Analysis (Lexicons)". Rstudio-Pubs-Static.S3.Amazonaws.Com. https://rstudio-pubs-static.s3.amazonaws.com/676279_2fa8c2a7a3da4e7089e24442758e9d1b.html.
+
+2. "Sentiment Analysis In R | R-Bloggers". 2021. R-Bloggers. https://www.r-bloggers.com/2021/05/sentiment-analysis-in-r-3/.
+
+3. Robinson, Julia. 2023. "2 Sentiment Analysis With Tidy Data | Text Mining With R". Tidytextmining.Com. https://www.tidytextmining.com/sentiment.html.
+
+4. "Text Mining: Sentiment Analysis · AFIT Data Science Lab R Programming Guide ". 2023. Afit-R.Github.Io. https://afit-r.github.io/sentiment_analysis.
+
+5. "TDM (Term Document Matrix) And DTM (Document Term Matrix)". 2023. Medium. https://medium.com/analytics-vidhya/tdm-term-document-matrix-and-dtm-document-term-matrix-8b07c58957e2.
+
+6. "Text Clustering With R: An Introduction For Data Scientists". 2018. Medium. https://medium.com/@SAPCAI/text-clustering-with-r-an-introduction-for-data-scientists-c406e7454e76.
+
+7. "Introductory Tutorial To Text Clustering With R". 2023. Rstudio-Pubs-Static.S3.Amazonaws.Com. https://rstudio-pubs-static.s3.amazonaws.com/445820_c6663e5a79874afdae826669a9499413.html.
+
+8. "Library Guides: Text Mining & Text Analysis: Language Corpora". 2023. Guides.Library.Uq.Edu.Au. https://guides.library.uq.edu.au/research-techniques/text-mining-analysis/language-corpora.
